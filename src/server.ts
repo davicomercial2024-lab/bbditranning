@@ -30,10 +30,13 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
-  return new Response(renderErrorPage(), {
+  const h3Error = consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`);
+  console.error(h3Error);
+  const errorMessage = h3Error instanceof Error ? h3Error.message : String(h3Error);
+  const errorStack = h3Error instanceof Error ? h3Error.stack : "";
+  return new Response(`H3 SSR Error: ${errorMessage}\n\nStack: ${errorStack}\n\nBody: ${body}`, {
     status: 500,
-    headers: { "content-type": "text/html; charset=utf-8" },
+    headers: { "content-type": "text/plain; charset=utf-8" },
   });
 }
 
@@ -45,9 +48,11 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : "";
+      return new Response(`Error: ${errorMessage}\n\nStack: ${errorStack}`, {
         status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: { "content-type": "text/plain; charset=utf-8" },
       });
     }
   },
