@@ -48,6 +48,16 @@ export const loginFn = createServerFn({ method: "POST" })
        session.department = dept?.name;
     }
 
+    if (user.role === "student") {
+      const formatter = new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+      });
+      await prisma.student.updateMany({
+        where: { email },
+        data: { lastActive: formatter.format(new Date()) }
+      });
+    }
+
     setCookie(SESSION_COOKIE, JSON.stringify(session), {
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days

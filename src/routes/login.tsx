@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { authenticate, saveSession, type UserRole } from "@/lib/auth";
-import { usePortalData } from "@/lib/portal-data";
 import { loginFn } from "@/lib/api/auth.functions";
 
 type LoginSearch = {
@@ -33,7 +32,6 @@ function getRedirectPath(role: UserRole, redirect?: string) {
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
-  const { markStudentAccess } = usePortalData();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -44,11 +42,6 @@ function LoginPage() {
     try {
       const session = await loginFn({ data: { email, password } });
 
-      if (session.role === "student") {
-        // We will move this logic to server side later, but for now we just navigate
-        // markStudentAccess(session.email);
-      }
-      
       const destination = getRedirectPath(session.role as UserRole, redirect);
 
       if (destination === "/admin") {

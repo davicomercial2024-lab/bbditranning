@@ -9,14 +9,11 @@ const globalForPrisma = globalThis as unknown as {
 function getAdapter() {
   const url = process.env.DATABASE_URL;
   if (!url) {
-    throw new Error("DATABASE_URL is not set");
+    console.error("DATABASE_URL is not set");
+    return undefined; // Let Prisma fail gracefully or use default connection
   }
   
-  // Extrai o authToken caso exista (por exemplo, na querystring)
-  const client = createClient({
-    url,
-  });
-  
+  const client = createClient({ url });
   return new PrismaLibSQL(client);
 }
 
