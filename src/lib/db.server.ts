@@ -1,5 +1,5 @@
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
-import { createClient } from "@libsql/client";
+
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -7,11 +7,13 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function getAdapter() {
-  const url = "libsql://bbditrainning-bbditrainning.aws-ap-northeast-1.turso.io";
-  const authToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODExOTYwNzAsImlkIjoiMDE5ZWI3OGUtOGUwMS03YzBkLWE5NmMtY2Q3MzlmMTg0ZTZiIiwicmlkIjoiOTk5YmYxNDMtZjgyZS00Y2ZkLTkwYmItNGM3OWIzOTNlMWU2In0.XWQ07B0izduh6nbGpno9vvllxQl2yo1VK9jUjAxqTnNuKmAfUMxZTjldFGnaUsMFp6qzHZsXONiDwO6Ne5crCQ";
+  let url = process.env.DATABASE_URL;
+  if (!url || url === "undefined") url = "libsql://bbditrainning-bbditrainning.aws-ap-northeast-1.turso.io";
   
-  const client = createClient({ url, authToken });
-  return new PrismaLibSQL(client);
+  let authToken = process.env.TURSO_AUTH_TOKEN;
+  if (!authToken || authToken === "undefined") authToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODExOTYwNzAsImlkIjoiMDE5ZWI3OGUtOGUwMS03YzBkLWE5NmMtY2Q3MzlmMTg0ZTZiIiwicmlkIjoiOTk5YmYxNDMtZjgyZS00Y2ZkLTkwYmItNGM3OWIzOTNlMWU2In0.XWQ07B0izduh6nbGpno9vvllxQl2yo1VK9jUjAxqTnNuKmAfUMxZTjldFGnaUsMFp6qzHZsXONiDwO6Ne5crCQ";
+  
+  return new PrismaLibSQL({ url, authToken });
 }
 
 export const prisma =
