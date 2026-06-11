@@ -3,7 +3,7 @@ import { LayoutDashboard, GraduationCap, Activity, User, Building2, FileBarChart
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { clearSession, getStoredSession, type AuthSession } from "@/lib/auth";
-import { logoutFn } from "@/lib/api/auth.functions";
+import { logoutFn, getSessionFn } from "@/lib/api/auth.functions";
 
 const studentNav = [
   { to: "/", label: "Visão geral", icon: LayoutDashboard },

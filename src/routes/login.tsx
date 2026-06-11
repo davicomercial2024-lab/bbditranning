@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
-import { authenticate, saveSession, type UserRole } from "@/lib/auth";
+import { type UserRole } from "@/lib/auth";
 import { loginFn } from "@/lib/api/auth.functions";
 
 type LoginSearch = {
