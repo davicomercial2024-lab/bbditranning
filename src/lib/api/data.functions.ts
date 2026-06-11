@@ -47,7 +47,7 @@ export const getTrainingsFn = createServerFn({ method: "GET" }).handler(async ()
 
 // Create or Update Department
 export const saveDepartmentFn = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().optional(), name: z.string() }))
+  .inputValidator(z.object({ id: z.string().optional(), name: z.string() }))
   .handler(async ({ data }) => {
     if (data.id && data.id !== "todos") {
       return await prisma.department.update({
@@ -62,7 +62,7 @@ export const saveDepartmentFn = createServerFn({ method: "POST" })
   });
 
 export const deleteDepartmentFn = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await prisma.department.delete({ where: { id: data.id } });
     return { success: true };
@@ -70,7 +70,7 @@ export const deleteDepartmentFn = createServerFn({ method: "POST" })
 
 // Create or Update Student
 export const saveStudentFn = createServerFn({ method: "POST" })
-  .validator(z.object({
+  .inputValidator(z.object({
     id: z.string().optional(),
     name: z.string(),
     email: z.string().email(),
@@ -127,7 +127,7 @@ export const saveStudentFn = createServerFn({ method: "POST" })
   });
 
 export const deleteStudentFn = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const student = await prisma.student.findUnique({ where: { id: data.id } });
     if (student && student.userId) {
@@ -137,7 +137,7 @@ export const deleteStudentFn = createServerFn({ method: "POST" })
   });
 
 export const saveTrainingFn = createServerFn({ method: "POST" })
-  .validator(z.any())
+  .inputValidator(z.any())
   .handler(async ({ data }) => {
     const training = data as any;
     let departmentId = null;
@@ -185,14 +185,14 @@ export const saveTrainingFn = createServerFn({ method: "POST" })
   });
 
 export const deleteTrainingFn = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await prisma.training.delete({ where: { id: data.id } });
     return { success: true };
   });
 
 export const markTrainingCompletedFn = createServerFn({ method: "POST" })
-  .validator(z.object({ studentId: z.string(), trainingId: z.string() }))
+  .inputValidator(z.object({ studentId: z.string(), trainingId: z.string() }))
   .handler(async ({ data }) => {
     await prisma.studentTrainingProgress.upsert({
       where: { studentId_trainingId: { studentId: data.studentId, trainingId: data.trainingId } },
@@ -203,7 +203,7 @@ export const markTrainingCompletedFn = createServerFn({ method: "POST" })
   });
 
 export const unmarkTrainingCompletedFn = createServerFn({ method: "POST" })
-  .validator(z.object({ studentId: z.string(), trainingId: z.string() }))
+  .inputValidator(z.object({ studentId: z.string(), trainingId: z.string() }))
   .handler(async ({ data }) => {
     await prisma.studentTrainingProgress.deleteMany({
       where: { studentId: data.studentId, trainingId: data.trainingId }
@@ -212,7 +212,7 @@ export const unmarkTrainingCompletedFn = createServerFn({ method: "POST" })
   });
 
 export const markStudentAccessFn = createServerFn({ method: "POST" })
-  .validator(z.object({ email: z.string().email() }))
+  .inputValidator(z.object({ email: z.string().email() }))
   .handler(async ({ data }) => {
     const formatter = new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",

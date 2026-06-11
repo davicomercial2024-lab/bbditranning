@@ -16,7 +16,7 @@ export type AuthSession = {
 };
 
 export const loginFn = createServerFn({ method: "POST" })
-  .validator(z.object({ email: z.string().email(), password: z.string() }))
+  .inputValidator((data: unknown) => z.object({ email: z.string().email(), password: z.string() }).parse(data))
   .handler(async ({ data }) => {
     const { email, password } = data;
 
