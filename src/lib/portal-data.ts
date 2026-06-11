@@ -28,10 +28,12 @@ export type Department = {
   name: string;
 };
 
+export type LessonType = "video" | "pdf" | "article" | "link";
+
 export type Lesson = {
   id: string;
   title: string;
-  type: string;
+  type: LessonType;
   duration: string;
   source: string;
   completed?: boolean;

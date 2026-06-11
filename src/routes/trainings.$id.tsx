@@ -2,8 +2,7 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { CheckCircle2, ChevronRight, FileText, FileType2, Headphones, PlayCircle } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { getStoredSession } from "@/lib/auth";
-import { type LessonType } from "@/lib/mock-data";
-import { usePortalData } from "@/lib/portal-data";
+import { usePortalData, type LessonType } from "@/lib/portal-data";
 
 export const Route = createFileRoute("/trainings/$id")({
   component: TrainingDetail,

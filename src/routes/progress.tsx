@@ -10,6 +10,14 @@ export const Route = createFileRoute("/progress")({
 });
 
 function ProgressPage() {
+  return (
+    <PortalShell title="Meu progresso" subtitle="Acompanhe o seu desempenho e conclusoes.">
+      <ProgressContent />
+    </PortalShell>
+  );
+}
+
+function ProgressContent() {
   const session = getStoredSession();
   const { getStudentByEmail, getVisibleTrainingsForStudent, isTrainingCompletedByStudent } = usePortalData();
   const student = getStudentByEmail(session?.email);

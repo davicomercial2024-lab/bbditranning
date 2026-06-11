@@ -1,8 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type InputHTMLAttributes, useEffect, useState } from "react";
-import { emptyLesson, emptyModule, emptyTraining, recalculateTraining, usePortalData } from "@/lib/portal-data";
-import type { LessonType, Training } from "@/lib/mock-data";
+import { emptyLesson, emptyModule, emptyTraining, recalculateTraining, usePortalData, type LessonType, type Training } from "@/lib/portal-data";
 
 function Field({ label, ...rest }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   return (

@@ -15,6 +15,14 @@ export const Route = createFileRoute("/")({
 });
 
 function StudentDashboard() {
+  return (
+    <PortalShell title="Visão geral" subtitle="Bons treinos. Continue de onde parou ou explore novos modulos.">
+      <DashboardContent />
+    </PortalShell>
+  );
+}
+
+function DashboardContent() {
   const session = getStoredSession();
   const { getStudentByEmail, getVisibleTrainingsForStudent, isTrainingCompletedByStudent } = usePortalData();
   const student = getStudentByEmail(session?.email);
@@ -24,7 +32,7 @@ function StudentDashboard() {
   const continueTraining = inProgress[0] ?? trainings[0];
 
   return (
-    <PortalShell title={`Ola, ${session?.name ?? "aluno"}`} subtitle="Bons treinos. Continue de onde parou ou explore novos modulos.">
+    <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
         <StatCard label="Treinamentos ativos" value={trainings.length} color="amber" icon={BookOpen} />
         <StatCard label="Treinos concluidos" value={completed.length} color="info" icon={CheckCircle2} />
@@ -85,6 +93,6 @@ function StudentDashboard() {
           })}
         </div>
       </section>
-    </PortalShell>
+    </>
   );
 }

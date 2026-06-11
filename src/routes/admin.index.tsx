@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PortalShell, StatCard } from "@/components/portal-shell";
-import { activity } from "@/lib/mock-data";
+
 import { usePortalData } from "@/lib/portal-data";
 import { BookOpen, Users, TrendingUp, Activity as ActivityIcon } from "lucide-react";
 
@@ -50,13 +50,7 @@ function AdminDashboard() {
         <div>
           <div className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground/70 mb-3">ATIVIDADE RECENTE</div>
           <div className="rounded-xl border border-border bg-card/60 divide-y divide-border/60">
-            {activity.map((a) => (
-              <div key={a.id} className="p-4">
-                <div className="text-sm"><span className="font-medium">{a.user}</span> <span className="text-muted-foreground">{a.action}</span></div>
-                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{a.target}</div>
-                <div className="text-[11px] text-muted-foreground/70 mt-1">{a.time}</div>
-              </div>
-            ))}
+            <div className="p-4 text-sm text-muted-foreground">Nenhuma atividade recente.</div>
           </div>
         </div>
       </div>
