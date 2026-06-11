@@ -65,7 +65,9 @@ function LoginPage() {
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-xl border border-border bg-card/70 p-6 shadow-sm">
         <div className="mb-6">
           <BrandLogo className="mx-auto h-auto w-full max-h-44 object-contain" />
-          <p className="mt-4 text-center text-sm text-muted-foreground">Alunos usam o e-mail cadastrado pelo admin.</p>
+          <p className="text-gray-400 text-sm mb-6 text-center">
+            Alunos usam o e-mail cadastrado pelo admin. (V2)
+          </p>
         </div>
 
         <label className="block text-sm font-medium" htmlFor="email">
