@@ -1,0 +1,2 @@
+ - Aluno: aluno@bbdi.com.br / aluno123
+ - Admin: admin@bbdi.com.br / BPT#0020a

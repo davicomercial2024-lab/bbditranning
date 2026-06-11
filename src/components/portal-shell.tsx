@@ -3,6 +3,7 @@ import { LayoutDashboard, GraduationCap, Activity, User, Building2, FileBarChart
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { clearSession, getStoredSession, type AuthSession } from "@/lib/auth";
+import { logoutFn } from "@/lib/api/auth.functions";
 
 const studentNav = [
   { to: "/", label: "Visão geral", icon: LayoutDashboard },
@@ -30,19 +31,22 @@ export function PortalShell({ children, title, subtitle, actions }: { children: 
   const isAuthorized = useMemo(() => session?.role === expectedRole, [expectedRole, session?.role]);
 
   useEffect(() => {
-    const storedSession = getStoredSession();
+    getSessionFn().then((storedSession) => {
+      if (!storedSession || storedSession.role !== expectedRole) {
+        logoutFn().then(() => {
+          clearSession();
+          void navigate({ to: "/login", search: { redirect: pathname } });
+        });
+        return;
+      }
 
-    if (!storedSession || storedSession.role !== expectedRole) {
-      clearSession();
-      void navigate({ to: "/login", search: { redirect: pathname } });
-      return;
-    }
-
-    setSession(storedSession);
-    setCheckedAuth(true);
+      setSession(storedSession);
+      setCheckedAuth(true);
+    });
   }, [expectedRole, navigate, pathname]);
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logoutFn();
     clearSession();
     void navigate({ to: "/login" });
   }

@@ -1,0 +1,1 @@
+import{B as e}from"./QueryClientProvider-pWleAGVl.js";import{t}from"./portal-shell-PFtrEgzU.js";import{t as n}from"./admin-training-form-DDD5FFWf.js";var r=e();function i(){return(0,r.jsx)(t,{title:`Novo treinamento`,subtitle:`Cadastre conteudos organizados em modulos e aulas.`,children:(0,r.jsx)(n,{})})}export{i as component};

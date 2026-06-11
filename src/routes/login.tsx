@@ -3,6 +3,7 @@ import { FormEvent, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { authenticate, saveSession, type UserRole } from "@/lib/auth";
 import { usePortalData } from "@/lib/portal-data";
+import { loginFn } from "@/lib/api/auth.functions";
 
 type LoginSearch = {
   redirect?: string;
@@ -37,32 +38,33 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const session = authenticate(email, password);
+    setError("");
+    try {
+      const session = await loginFn({ data: { email, password } });
 
-    if (!session) {
-      setError("E-mail ou senha invalidos.");
-      return;
+      if (session.role === "student") {
+        // We will move this logic to server side later, but for now we just navigate
+        // markStudentAccess(session.email);
+      }
+      
+      const destination = getRedirectPath(session.role as UserRole, redirect);
+
+      if (destination === "/admin") {
+        void navigate({ to: "/admin" });
+        return;
+      }
+
+      if (destination === "/") {
+        void navigate({ to: "/" });
+        return;
+      }
+
+      window.location.assign(destination);
+    } catch (err: any) {
+      setError(err.message || "E-mail ou senha invalidos.");
     }
-
-    saveSession(session);
-    if (session.role === "student") {
-      markStudentAccess(session.email);
-    }
-    const destination = getRedirectPath(session.role, redirect);
-
-    if (destination === "/admin") {
-      void navigate({ to: "/admin" });
-      return;
-    }
-
-    if (destination === "/") {
-      void navigate({ to: "/" });
-      return;
-    }
-
-    window.location.assign(destination);
   }
 
   return (
