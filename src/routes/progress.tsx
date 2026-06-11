@@ -26,7 +26,7 @@ function ProgressContent() {
   const pct = trainings.length > 0 ? Math.round((completedCount / trainings.length) * 100) : 0;
 
   return (
-    <PortalShell title="Meu progresso" subtitle="Acompanhe seu desempenho nos treinamentos do seu departamento.">
+    <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
         <StatCard label="Progresso geral" value={`${pct}%`} color="amber" icon={Trophy} />
         <StatCard label="Treinos concluidos" value={completedCount} color="info" icon={CheckCircle2} />
@@ -55,6 +55,6 @@ function ProgressContent() {
         })}
         {trainings.length === 0 && <div className="p-6 text-sm text-muted-foreground">Nenhum treinamento disponivel para o seu departamento.</div>}
       </div>
-    </PortalShell>
+    </>
   );
 }
