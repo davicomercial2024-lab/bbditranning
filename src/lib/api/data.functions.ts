@@ -10,15 +10,19 @@ export const getDepartmentsFn = createServerFn({ method: "GET" }).handler(async 
 
 // Fetch ALL data for the portal at once (to replace mock snapshot easily)
 export const getPortalDataFn = createServerFn({ method: "GET" }).handler(async () => {
+  console.log("-> getPortalDataFn start");
   const departments = await prisma.department.findMany({ orderBy: { name: "asc" } });
+  console.log("-> got departments");
   const students = await prisma.student.findMany({
     include: { progressRecords: true, department: true },
     orderBy: { name: "asc" }
   });
+  console.log("-> got students");
   const trainings = await prisma.training.findMany({
     include: { progressRecords: true, department: true },
-    orderBy: [{ order: "asc" }, { title: "asc" }]
+    orderBy: { order: "asc" }
   });
+  console.log("-> got trainings");
 
   // Map progress records into the expected format Record<studentId, string[]>
   const progress: Record<string, string[]> = {};
@@ -41,7 +45,7 @@ export const getStudentsFn = createServerFn({ method: "GET" }).handler(async () 
 export const getTrainingsFn = createServerFn({ method: "GET" }).handler(async () => {
   return await prisma.training.findMany({
     include: { department: true, progressRecords: true },
-    orderBy: [{ order: "asc" }, { title: "asc" }],
+    orderBy: { order: "asc" },
   });
 });
 
