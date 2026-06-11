@@ -2,7 +2,94 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { getStoredSession } from "@/lib/auth";
-import { usePortalData } from "@/lib/portal-data";
+import { useState } from "react";
+import { usePortalData, type QuizQuestion } from "@/lib/portal-data";
+
+function QuizPlayer({ questions }: { questions: QuizQuestion[] }) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  if (!questions || questions.length === 0) {
+    return <div className="text-center text-muted-foreground">Nenhuma pergunta neste quiz.</div>;
+  }
+
+  const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.correctIndex ? 1 : 0), 0);
+  const passed = score === questions.length;
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-8">
+      {questions.map((q, qIndex) => (
+        <div key={qIndex} className="space-y-4">
+          <h3 className="text-lg font-medium text-foreground">
+            {qIndex + 1}. {q.question}
+          </h3>
+          <div className="space-y-2">
+            {q.options.map((opt, optIndex) => {
+              const isSelected = answers[qIndex] === optIndex;
+              const isCorrect = q.correctIndex === optIndex;
+              let btnClass = "w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors ";
+              
+              if (!submitted) {
+                btnClass += isSelected ? "border-primary bg-primary/10 text-primary" : "border-border bg-card/50 hover:border-primary/50 text-foreground";
+              } else {
+                if (isCorrect) {
+                  btnClass += "border-green-500 bg-green-500/10 text-green-500 font-medium";
+                } else if (isSelected && !isCorrect) {
+                  btnClass += "border-red-500 bg-red-500/10 text-red-500";
+                } else {
+                  btnClass += "border-border bg-card/20 text-muted-foreground opacity-50";
+                }
+              }
+
+              return (
+                <button
+                  key={optIndex}
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => setAnswers((prev) => ({ ...prev, [qIndex]: optIndex }))}
+                  className={btnClass}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      <div className="pt-6 border-t border-border">
+        {!submitted ? (
+          <button
+            type="button"
+            disabled={Object.keys(answers).length < questions.length}
+            onClick={() => setSubmitted(true)}
+            className="w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            Finalizar Quiz
+          </button>
+        ) : (
+          <div className="text-center space-y-4">
+            <div className={`text-2xl font-display font-bold ${passed ? "text-green-500" : "text-amber-500"}`}>
+              {passed ? "Parabens! Voce acertou tudo!" : `Voce acertou ${score} de ${questions.length}.`}
+            </div>
+            {!passed && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAnswers({});
+                  setSubmitted(false);
+                }}
+                className="rounded-md border border-border bg-card px-6 py-2 text-sm font-medium hover:bg-accent"
+              >
+                Tentar Novamente
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/trainings/$id/lesson/$lessonId")({
   component: LessonPage,
@@ -93,6 +180,11 @@ function LessonPage() {
         )}
         {lesson.type === "text" && !textLooksLikeHtml && (
           <article className="p-8 text-sm leading-7 whitespace-pre-wrap text-foreground">{contentSource}</article>
+        )}
+        {lesson.type === "quiz" && (
+          <div className="p-8">
+            <QuizPlayer questions={lesson.questions || []} />
+          </div>
         )}
       </div>
 

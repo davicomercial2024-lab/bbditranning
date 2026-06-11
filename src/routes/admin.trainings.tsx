@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { usePortalData } from "@/lib/portal-data";
 
@@ -9,11 +9,29 @@ export const Route = createFileRoute("/admin/trainings")({
 });
 
 function AdminTrainings() {
-  const { trainings, deleteTraining } = usePortalData();
+  const { trainings, deleteTraining, reorderTrainings } = usePortalData();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   if (pathname !== "/admin/trainings" && pathname !== "/admin/trainings/") {
     return <Outlet />;
+  }
+
+  function moveUp(index: number) {
+    if (index === 0) return;
+    const items = [...trainings];
+    const temp = items[index - 1];
+    items[index - 1] = items[index];
+    items[index] = temp;
+    reorderTrainings(items.map((t, i) => ({ id: t.id, order: i })));
+  }
+
+  function moveDown(index: number) {
+    if (index === trainings.length - 1) return;
+    const items = [...trainings];
+    const temp = items[index + 1];
+    items[index + 1] = items[index];
+    items[index] = temp;
+    reorderTrainings(items.map((t, i) => ({ id: t.id, order: i })));
   }
 
   return (
@@ -39,7 +57,7 @@ function AdminTrainings() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
-            {trainings.map((training) => (
+            {trainings.map((training, index) => (
               <tr key={training.id} className="hover:bg-accent/30">
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
@@ -56,6 +74,12 @@ function AdminTrainings() {
                 <td className="px-5 py-4 text-right tabular-nums">{training.totalLessons}</td>
                 <td className="px-5 py-4 text-right">
                   <div className="inline-flex items-center gap-1">
+                    <button type="button" onClick={() => moveUp(index)} disabled={index === 0} className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent disabled:opacity-30" aria-label="Mover para cima">
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" onClick={() => moveDown(index)} disabled={index === trainings.length - 1} className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent disabled:opacity-30" aria-label="Mover para baixo">
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
                     <Link to="/admin/trainings/edit/$id" params={{ id: training.id }} className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent" aria-label="Editar">
                       <Pencil className="h-3.5 w-3.5" />
                     </Link>

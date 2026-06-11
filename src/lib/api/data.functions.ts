@@ -17,7 +17,7 @@ export const getPortalDataFn = createServerFn({ method: "GET" }).handler(async (
   });
   const trainings = await prisma.training.findMany({
     include: { progressRecords: true, department: true },
-    orderBy: { title: "asc" }
+    orderBy: [{ order: "asc" }, { title: "asc" }]
   });
 
   // Map progress records into the expected format Record<studentId, string[]>
@@ -41,7 +41,7 @@ export const getStudentsFn = createServerFn({ method: "GET" }).handler(async () 
 export const getTrainingsFn = createServerFn({ method: "GET" }).handler(async () => {
   return await prisma.training.findMany({
     include: { department: true, progressRecords: true },
-    orderBy: { title: "asc" },
+    orderBy: [{ order: "asc" }, { title: "asc" }],
   });
 });
 
@@ -188,6 +188,20 @@ export const deleteTrainingFn = createServerFn({ method: "POST" })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await prisma.training.delete({ where: { id: data.id } });
+    return { success: true };
+  });
+
+export const reorderTrainingsFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    updates: z.array(z.object({ id: z.string(), order: z.number() }))
+  }))
+  .handler(async ({ data }) => {
+    for (const update of data.updates) {
+      await prisma.training.update({
+        where: { id: update.id },
+        data: { order: update.order }
+      });
+    }
     return { success: true };
   });
 

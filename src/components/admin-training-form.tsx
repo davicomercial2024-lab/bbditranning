@@ -29,7 +29,7 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
     }));
   }
 
-  function updateLesson(moduleIndex: number, lessonIndex: number, field: "title" | "type" | "duration" | "source", value: string) {
+  function updateLesson(moduleIndex: number, lessonIndex: number, field: "title" | "type" | "duration" | "source" | "questions", value: any) {
     setDraft((current) => ({
       ...current,
       modules: current.modules.map((module, index) =>
@@ -205,6 +205,7 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                           <option value="pdf">PDF</option>
                           <option value="audio">Audio</option>
                           <option value="text">Texto</option>
+                          <option value="quiz">Quiz</option>
                         </select>
                         <input value={lesson.title} onChange={(event) => updateLesson(moduleIndex, lessonIndex, "title", event.target.value)} placeholder="Titulo da aula" className="bg-transparent text-sm outline-none" />
                         <input value={lesson.duration} onChange={(event) => updateLesson(moduleIndex, lessonIndex, "duration", event.target.value)} placeholder="Duracao" className="bg-transparent text-sm outline-none" />
@@ -220,6 +221,77 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                           rows={6}
                           className="mt-3 w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
                         />
+                      ) : lesson.type === "quiz" ? (
+                        <div className="mt-4 space-y-4 rounded-md border border-border/50 bg-background/20 p-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Perguntas do Quiz</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const q = lesson.questions || [];
+                                updateLesson(moduleIndex, lessonIndex, "questions" as any, [...q, { question: "", options: ["", "", "", ""], correctIndex: 0 }] as any);
+                              }}
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:opacity-80"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> Adicionar pergunta
+                            </button>
+                          </div>
+                          {(lesson.questions || []).map((q, qIndex) => (
+                            <div key={qIndex} className="relative rounded border border-border/60 bg-background/50 p-3 pt-5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const qs = [...(lesson.questions || [])];
+                                  qs.splice(qIndex, 1);
+                                  updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                                }}
+                                className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                              <input
+                                value={q.question}
+                                onChange={(e) => {
+                                  const qs = [...(lesson.questions || [])];
+                                  qs[qIndex].question = e.target.value;
+                                  updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                                }}
+                                placeholder="Digite a pergunta"
+                                className="mb-3 w-full border-b border-border bg-transparent pb-1 text-sm font-medium outline-none placeholder:text-muted-foreground/50 focus:border-primary"
+                              />
+                              <div className="space-y-2 pl-2">
+                                {q.options.map((opt, optIndex) => (
+                                  <div key={optIndex} className="flex items-center gap-2">
+                                    <input
+                                      type="radio"
+                                      name={`quiz-${moduleIndex}-${lessonIndex}-${qIndex}`}
+                                      checked={q.correctIndex === optIndex}
+                                      onChange={() => {
+                                        const qs = [...(lesson.questions || [])];
+                                        qs[qIndex].correctIndex = optIndex;
+                                        updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                                      }}
+                                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-primary"
+                                    />
+                                    <input
+                                      value={opt}
+                                      onChange={(e) => {
+                                        const qs = [...(lesson.questions || [])];
+                                        qs[qIndex].options[optIndex] = e.target.value;
+                                        updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                                      }}
+                                      placeholder={`Opcao ${optIndex + 1}`}
+                                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          {(!lesson.questions || lesson.questions.length === 0) && (
+                            <div className="text-center text-xs text-muted-foreground">Nenhuma pergunta adicionada.</div>
+                          )}
+                        </div>
                       ) : (
                         <input
                           value={lesson.source}

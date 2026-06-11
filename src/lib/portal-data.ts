@@ -9,7 +9,8 @@ import {
   deleteTrainingFn,
   markTrainingCompletedFn,
   unmarkTrainingCompletedFn,
-  markStudentAccessFn
+  markStudentAccessFn,
+  reorderTrainingsFn
 } from "./api/data.functions";
 
 export type Student = {
@@ -28,7 +29,13 @@ export type Department = {
   name: string;
 };
 
-export type LessonType = "video" | "pdf" | "article" | "link";
+export type LessonType = "video" | "pdf" | "article" | "link" | "text" | "quiz";
+
+export type QuizQuestion = {
+  question: string;
+  options: string[];
+  correctIndex: number;
+};
 
 export type Lesson = {
   id: string;
@@ -36,6 +43,7 @@ export type Lesson = {
   type: LessonType;
   duration: string;
   source: string;
+  questions?: QuizQuestion[];
   completed?: boolean;
 };
 
@@ -54,6 +62,7 @@ export type Training = {
   cover: string;
   totalLessons: number;
   completedLessons: number;
+  order?: number;
   modules: Module[];
 };
 
@@ -92,7 +101,7 @@ export function recalculateTraining(training: Training): Training {
 }
 
 export function emptyLesson(index: number): Lesson {
-  return { id: createId(`aula-${index}`, "lesson"), title: "", type: "video", duration: "", source: "" };
+  return { id: createId(`aula-${index}`, "lesson"), title: "", type: "video", duration: "", source: "", questions: [] };
 }
 
 export function emptyModule(index: number): Module {
@@ -173,6 +182,7 @@ export function usePortalData() {
   const mutMarkTraining = useMutation({ mutationFn: (d: any) => markTrainingCompletedFn({ data: d }), onSuccess: invalidate });
   const mutUnmarkTraining = useMutation({ mutationFn: (d: any) => unmarkTrainingCompletedFn({ data: d }), onSuccess: invalidate });
   const mutMarkAccess = useMutation({ mutationFn: (email: string) => markStudentAccessFn({ data: { email } }), onSuccess: invalidate });
+  const mutReorderTrainings = useMutation({ mutationFn: (updates: { id: string, order: number }[]) => reorderTrainingsFn({ data: { updates } }), onSuccess: invalidate });
 
   return {
     trainings,
@@ -205,5 +215,6 @@ export function usePortalData() {
     markTrainingCompleted: (studentId: string | undefined, trainingId: string) => studentId && mutMarkTraining.mutate({ studentId, trainingId }),
     unmarkTrainingCompleted: (studentId: string | undefined, trainingId: string) => studentId && mutUnmarkTraining.mutate({ studentId, trainingId }),
     markStudentAccess: (email: string) => mutMarkAccess.mutate(email),
+    reorderTrainings: (updates: { id: string, order: number }[]) => mutReorderTrainings.mutate(updates),
   };
 }

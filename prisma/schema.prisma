@@ -45,6 +45,7 @@ model Training {
   department       Department?             @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   totalLessons     Int                     @default(0)
   completedLessons Int                     @default(0)
+  order            Int                     @default(0)
   modules          Json
   progressRecords  StudentTrainingProgress[]
   createdAt        DateTime                @default(now())
