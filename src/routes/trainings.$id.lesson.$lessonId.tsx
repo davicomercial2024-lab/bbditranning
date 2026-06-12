@@ -111,6 +111,30 @@ function normalizeGithubFileUrl(source: string) {
   }
 }
 
+function getValidVideoUrl(source: string) {
+  if (!source) return "";
+  if (source.includes("<iframe") && source.includes("src=")) {
+    const match = source.match(/src=["'](.*?)["']/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  try {
+    const url = new URL(source);
+    if (url.hostname.includes("youtube.com") && url.pathname === "/watch") {
+      const v = url.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+    if (url.hostname === "youtu.be") {
+      const v = url.pathname.slice(1);
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+  } catch {
+    // ignore
+  }
+  return source;
+}
+
 function LessonPage() {
   const { id, lessonId } = Route.useParams();
   const session = getStoredSession();
@@ -145,7 +169,7 @@ function LessonPage() {
       <div className="rounded-xl border border-border bg-card/60 overflow-hidden">
         {lesson.type === "video" && (
           <div className="aspect-video bg-black">
-            <iframe src={lesson.source} title={lesson.title} className="w-full h-full" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            <iframe src={getValidVideoUrl(lesson.source)} title={lesson.title} className="w-full h-full" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
           </div>
         )}
         {lesson.type === "pdf" && (
