@@ -20,7 +20,7 @@ const adminNav = [
   { to: "/admin/reports", label: "Relatórios", icon: FileBarChart },
 ];
 
-export function PortalShell({ children, title, subtitle, actions }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode }) {
+export function PortalShell({ children, title, subtitle, actions, fullWidth }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode; fullWidth?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isAdmin = pathname.startsWith("/admin");
@@ -111,7 +111,7 @@ export function PortalShell({ children, title, subtitle, actions }: { children: 
       </aside>
 
       <main className="flex-1 min-w-0">
-        <div className="mx-auto max-w-6xl px-6 md:px-10 py-10">
+        <div className={`mx-auto ${fullWidth ? "w-[95%] max-w-none" : "max-w-6xl"} px-6 md:px-10 py-10`}>
           <header className="flex items-start justify-between gap-6 mb-8 pb-6 border-b border-border/60">
             <div className="min-w-0">
               <h1 className="text-3xl md:text-4xl font-display font-semibold">{title}</h1>

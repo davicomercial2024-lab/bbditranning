@@ -1,4 +1,5 @@
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { 
   getPortalDataFn, 
   saveStudentFn, 
@@ -10,7 +11,8 @@ import {
   markTrainingCompletedFn,
   unmarkTrainingCompletedFn,
   markStudentAccessFn,
-  reorderTrainingsFn
+  reorderTrainingsFn,
+  uploadPdfFn
 } from "./api/data.functions";
 
 export type Student = {
@@ -183,6 +185,7 @@ export function usePortalData() {
   const mutUnmarkTraining = useMutation({ mutationFn: (d: any) => unmarkTrainingCompletedFn({ data: d }), onSuccess: invalidate });
   const mutMarkAccess = useMutation({ mutationFn: (email: string) => markStudentAccessFn({ data: { email } }), onSuccess: invalidate });
   const mutReorderTrainings = useMutation({ mutationFn: (updates: { id: string, order: number }[]) => reorderTrainingsFn({ data: { updates } }), onSuccess: invalidate });
+  const mutUploadPdf = useMutation({ mutationFn: (d: { name: string, base64: string }) => uploadPdfFn({ data: d }) });
 
   return {
     trainings,
@@ -216,5 +219,35 @@ export function usePortalData() {
     unmarkTrainingCompleted: (studentId: string | undefined, trainingId: string) => studentId && mutUnmarkTraining.mutate({ studentId, trainingId }),
     markStudentAccess: (email: string) => mutMarkAccess.mutate(email),
     reorderTrainings: (updates: { id: string, order: number }[]) => mutReorderTrainings.mutate(updates),
+    uploadPdfAsync: (name: string, base64: string) => mutUploadPdf.mutateAsync({ name, base64 }),
   };
+}
+
+export function useLessonProgress(studentId?: string | null) {
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (studentId) {
+      const stored = localStorage.getItem(`lesson_progress_${studentId}`);
+      if (stored) {
+        try {
+          setCompletedLessons(new Set(JSON.parse(stored)));
+        } catch {}
+      }
+    }
+  }, [studentId]);
+
+  const markLessonCompleted = (lessonId: string) => {
+    if (!studentId) return;
+    setCompletedLessons(prev => {
+      const next = new Set(prev);
+      next.add(lessonId);
+      localStorage.setItem(`lesson_progress_${studentId}`, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const isLessonCompleted = (lessonId: string) => completedLessons.has(lessonId);
+
+  return { isLessonCompleted, markLessonCompleted };
 }

@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "../db.server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 
 // Fetch all departments
 export const getDepartmentsFn = createServerFn({ method: "GET" }).handler(async () => {
@@ -240,4 +242,19 @@ export const markStudentAccessFn = createServerFn({ method: "POST" })
       data: { lastActive: formatter.format(new Date()) }
     });
     return { success: true };
+  });
+
+export const uploadPdfFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ name: z.string(), base64: z.string() }))
+  .handler(async ({ data }) => {
+    const buffer = Buffer.from(data.base64, "base64");
+    const safeName = data.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const uniqueName = `${Date.now()}-${safeName}`;
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const filePath = path.join(uploadDir, uniqueName);
+    fs.writeFileSync(filePath, buffer);
+    return { url: `/uploads/${uniqueName}` };
   });

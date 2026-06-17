@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type InputHTMLAttributes, useEffect, useState } from "react";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 import { emptyLesson, emptyModule, emptyTraining, recalculateTraining, usePortalData, type LessonType, type Training } from "@/lib/portal-data";
 
 function Field({ label, ...rest }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
@@ -14,9 +16,10 @@ function Field({ label, ...rest }: { label: string } & InputHTMLAttributes<HTMLI
 
 export function AdminTrainingForm({ training }: { training?: Training }) {
   const navigate = useNavigate();
-  const { saveTraining, coverOptions, departmentNames } = usePortalData();
+  const { saveTraining, coverOptions, departmentNames, uploadPdfAsync } = usePortalData();
   const [draft, setDraft] = useState<Training>(() => recalculateTraining(training ?? emptyTraining()));
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     setDraft(recalculateTraining(training ?? emptyTraining()));
@@ -214,13 +217,14 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                         </button>
                       </div>
                       {lesson.type === "text" ? (
-                        <textarea
-                          value={lesson.source}
-                          onChange={(event) => updateLesson(moduleIndex, lessonIndex, "source", event.target.value)}
-                          placeholder="Escreva aqui o texto que o aluno vai visualizar no portal."
-                          rows={6}
-                          className="mt-3 w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
-                        />
+                        <div className="mt-3 bg-background rounded-md border border-border overflow-hidden text-foreground [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-border [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[150px]">
+                          <ReactQuill
+                            theme="snow"
+                            value={lesson.source === "#" ? "" : lesson.source}
+                            onChange={(content) => updateLesson(moduleIndex, lessonIndex, "source", content)}
+                            placeholder="Escreva aqui o texto que o aluno vai visualizar no portal."
+                          />
+                        </div>
                       ) : lesson.type === "quiz" ? (
                         <div className="mt-4 space-y-4 rounded-md border border-border/50 bg-background/20 p-4">
                           <div className="flex items-center justify-between">
@@ -293,12 +297,46 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                           )}
                         </div>
                       ) : (
-                        <input
-                          value={lesson.source}
-                          onChange={(event) => updateLesson(moduleIndex, lessonIndex, "source", event.target.value)}
-                          placeholder={lesson.type === "pdf" ? "URL do arquivo PDF" : lesson.type === "audio" ? "URL do audio" : "URL/embed do video"}
-                          className="mt-3 w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
-                        />
+                        <div className="mt-3 w-full flex items-center gap-2">
+                          <input
+                            value={lesson.source}
+                            onChange={(event) => updateLesson(moduleIndex, lessonIndex, "source", event.target.value)}
+                            placeholder={lesson.type === "pdf" ? "URL do arquivo PDF" : lesson.type === "audio" ? "URL do audio" : "URL/embed do video"}
+                            className="flex-1 rounded-md border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+                          />
+                          {lesson.type === "pdf" && (
+                            <label className="shrink-0 flex items-center justify-center rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 text-sm font-medium cursor-pointer transition-colors">
+                              {uploading[`${moduleIndex}-${lessonIndex}`] ? "Enviando..." : "Fazer Upload"}
+                              <input
+                                type="file"
+                                accept="application/pdf"
+                                className="hidden"
+                                disabled={uploading[`${moduleIndex}-${lessonIndex}`]}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const key = `${moduleIndex}-${lessonIndex}`;
+                                  setUploading((prev) => ({ ...prev, [key]: true }));
+                                  try {
+                                    const reader = new FileReader();
+                                    reader.onload = async () => {
+                                      const base64 = (reader.result as string).split(",")[1];
+                                      const res = await uploadPdfAsync(file.name, base64);
+                                      if (res?.url) {
+                                        updateLesson(moduleIndex, lessonIndex, "source", res.url);
+                                      }
+                                      setUploading((prev) => ({ ...prev, [key]: false }));
+                                    };
+                                    reader.readAsDataURL(file);
+                                  } catch (error) {
+                                    console.error("Upload failed", error);
+                                    setUploading((prev) => ({ ...prev, [key]: false }));
+                                  }
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}

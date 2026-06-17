@@ -42,22 +42,35 @@ function DashboardContent() {
 
       <section className="mb-10">
         <div className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground/70 mb-3">CONTINUAR TREINAMENTO</div>
-        {continueTraining ? (
-          <div className={`rounded-2xl p-6 md:p-8 bg-gradient-to-br ${continueTraining.cover} border border-border/60 relative overflow-hidden`}>
-            <div className="relative z-10 max-w-2xl">
-              <div className="text-xs uppercase tracking-wider text-foreground/70">{continueTraining.category}</div>
-              <h2 className="mt-1 text-2xl md:text-3xl font-display font-bold">{continueTraining.title}</h2>
-              <p className="mt-2 text-sm text-foreground/80">{continueTraining.description}</p>
-              <Link
-                to="/trainings/$id"
-                params={{ id: continueTraining.id }}
-                className="mt-6 inline-flex items-center gap-2 rounded-md bg-foreground text-background px-4 py-2.5 text-sm font-medium hover:opacity-90"
-              >
-                <PlayCircle className="h-4 w-4" /> Abrir treinamento
-              </Link>
+        {continueTraining ? (() => {
+          const isContinueSinglePdf = continueTraining.modules.length === 1 && continueTraining.modules[0].lessons.length === 1 && continueTraining.modules[0].lessons[0].type === "pdf";
+          return (
+            <div className={`rounded-2xl p-6 md:p-8 bg-gradient-to-br ${continueTraining.cover} border border-border/60 relative overflow-hidden`}>
+              <div className="relative z-10 max-w-2xl">
+                <div className="text-xs uppercase tracking-wider text-foreground/70">{continueTraining.category}</div>
+                <h2 className="mt-1 text-2xl md:text-3xl font-display font-bold">{continueTraining.title}</h2>
+                <p className="mt-2 text-sm text-foreground/80">{continueTraining.description}</p>
+                {isContinueSinglePdf ? (
+                  <Link
+                    to="/trainings/$id/lesson/$lessonId"
+                    params={{ id: continueTraining.id, lessonId: continueTraining.modules[0].lessons[0].id }}
+                    className="mt-6 inline-flex items-center gap-2 rounded-md bg-foreground text-background px-4 py-2.5 text-sm font-medium hover:opacity-90"
+                  >
+                    <PlayCircle className="h-4 w-4" /> Abrir PDF
+                  </Link>
+                ) : (
+                  <Link
+                    to="/trainings/$id"
+                    params={{ id: continueTraining.id }}
+                    className="mt-6 inline-flex items-center gap-2 rounded-md bg-foreground text-background px-4 py-2.5 text-sm font-medium hover:opacity-90"
+                  >
+                    <PlayCircle className="h-4 w-4" /> Abrir treinamento
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-        ) : (
+          );
+        })() : (
           <div className="rounded-xl border border-border bg-card/60 p-6 text-sm text-muted-foreground">Nenhum treinamento disponivel para o seu departamento.</div>
         )}
       </section>
@@ -70,13 +83,9 @@ function DashboardContent() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {trainings.map((training) => {
             const done = isTrainingCompletedByStudent(student?.id, training.id);
-            return (
-              <Link
-                key={training.id}
-                to="/trainings/$id"
-                params={{ id: training.id }}
-                className="group rounded-xl border border-border bg-card/60 overflow-hidden hover:border-primary/40 transition-colors"
-              >
+            const isSinglePdf = training.modules.length === 1 && training.modules[0].lessons.length === 1 && training.modules[0].lessons[0].type === "pdf";
+            const cardContent = (
+              <>
                 <div className={`h-28 bg-gradient-to-br ${training.cover} relative`}>
                   <div className="absolute bottom-2 left-3 text-[10px] uppercase tracking-wider text-foreground/80 bg-background/40 backdrop-blur px-2 py-0.5 rounded">{training.category}</div>
                 </div>
@@ -88,6 +97,30 @@ function DashboardContent() {
                   <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{training.description}</p>
                   <div className="mt-4 text-xs text-muted-foreground">{training.totalLessons} aulas</div>
                 </div>
+              </>
+            );
+
+            if (isSinglePdf) {
+              return (
+                <Link
+                  key={training.id}
+                  to="/trainings/$id/lesson/$lessonId"
+                  params={{ id: training.id, lessonId: training.modules[0].lessons[0].id }}
+                  className="group rounded-xl border border-border bg-card/60 overflow-hidden hover:border-primary/40 transition-colors cursor-pointer"
+                >
+                  {cardContent}
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={training.id}
+                to="/trainings/$id"
+                params={{ id: training.id }}
+                className="group rounded-xl border border-border bg-card/60 overflow-hidden hover:border-primary/40 transition-colors"
+              >
+                {cardContent}
               </Link>
             );
           })}

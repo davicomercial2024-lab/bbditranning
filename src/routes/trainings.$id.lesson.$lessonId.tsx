@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { getStoredSession } from "@/lib/auth";
-import { useState } from "react";
-import { usePortalData, type QuizQuestion } from "@/lib/portal-data";
+import { useState, useEffect } from "react";
+import { usePortalData, type QuizQuestion, useLessonProgress } from "@/lib/portal-data";
 
-function QuizPlayer({ questions }: { questions: QuizQuestion[] }) {
+function QuizPlayer({ questions, onPass }: { questions: QuizQuestion[], onPass: () => void }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -15,6 +15,12 @@ function QuizPlayer({ questions }: { questions: QuizQuestion[] }) {
 
   const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.correctIndex ? 1 : 0), 0);
   const passed = score === questions.length;
+
+  useEffect(() => {
+    if (submitted && passed) {
+      onPass();
+    }
+  }, [submitted, passed, onPass]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -140,6 +146,7 @@ function LessonPage() {
   const session = getStoredSession();
   const { getStudentByEmail, getTraining, getVisibleTrainingsForStudent, isTrainingCompletedByStudent, markTrainingCompleted, unmarkTrainingCompleted } = usePortalData();
   const student = getStudentByEmail(session?.email);
+  const { isLessonCompleted, markLessonCompleted } = useLessonProgress(student?.id);
   const visibleIds = new Set(getVisibleTrainingsForStudent(session?.email).map((training) => training.id));
   const training = getTraining(id);
   const flat = training?.modules.flatMap((m) => m.lessons) ?? [];
@@ -159,9 +166,13 @@ function LessonPage() {
   const textLooksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(lesson.source);
   const contentSource = lesson.type === "pdf" ? normalizeGithubFileUrl(lesson.source) : lesson.source;
   const completed = isTrainingCompletedByStudent(student?.id, training.id);
+  const lessonCompleted = isLessonCompleted(lesson.id);
+  const isSingleLessonTraining = flat.length === 1;
+  const allLessonsCompleted = flat.every(l => isLessonCompleted(l.id));
+  const canCompleteTraining = isSingleLessonTraining || allLessonsCompleted || completed;
 
   return (
-    <PortalShell title={lesson.title} subtitle={`${training.title} - ${lesson.duration}`}>
+    <PortalShell title={lesson.title} subtitle={`${training.title} - ${lesson.duration}`} fullWidth={lesson.type === "pdf"}>
       <Link to="/trainings/$id" params={{ id: training.id }} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-3.5 w-3.5" /> Voltar para {training.title}
       </Link>
@@ -188,7 +199,7 @@ function LessonPage() {
                 <ExternalLink className="h-4 w-4" /> Abrir PDF
               </a>
             </div>
-            <div className="h-[70vh] bg-black">
+            <div className="h-[90vh] bg-black">
               <iframe src={contentSource} title={lesson.title} className="h-full w-full" />
             </div>
           </div>
@@ -200,38 +211,68 @@ function LessonPage() {
           </div>
         )}
         {lesson.type === "text" && textLooksLikeHtml && (
-          <article className="prose prose-invert max-w-none p-8 prose-headings:font-display prose-h2:text-2xl" dangerouslySetInnerHTML={{ __html: contentSource }} />
+          <article 
+            className="p-8 text-sm leading-relaxed text-foreground break-words overflow-wrap-anywhere [&>p]:mb-4 last:[&>p]:mb-0 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>strong]:font-bold [&>em]:italic" 
+            dangerouslySetInnerHTML={{ __html: contentSource.replace(/\u00A0/g, ' ') }} 
+          />
         )}
         {lesson.type === "text" && !textLooksLikeHtml && (
-          <article className="p-8 text-sm leading-7 whitespace-pre-wrap text-foreground">{contentSource}</article>
+          <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap text-foreground break-words overflow-wrap-anywhere">
+            {contentSource.replace(/\u00A0/g, ' ')}
+          </article>
         )}
         {lesson.type === "quiz" && (
           <div className="p-8">
-            <QuizPlayer questions={lesson.questions || []} />
+            <QuizPlayer key={lesson.id} questions={lesson.questions || []} onPass={() => markLessonCompleted(lesson.id)} />
           </div>
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-3">
+      {lesson.type !== "quiz" && !isSingleLessonTraining && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            disabled={lessonCompleted}
+            onClick={() => markLessonCompleted(lesson.id)}
+            className="inline-flex items-center gap-2 rounded-md bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {lessonCompleted ? "Aula concluída" : "Marcar aula como concluída"}
+          </button>
+        </div>
+      )}
+
+      <div className="mt-6 flex items-center justify-between gap-3 border-t border-border/60 pt-6">
         {prev ? (
           <Link to="/trainings/$id/lesson/$lessonId" params={{ id: training.id, lessonId: prev.id }} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm hover:bg-accent">
             <ChevronLeft className="h-4 w-4" /> Anterior
           </Link>
         ) : <div />}
 
-        <button
-          type="button"
-          onClick={() => {
-            if (completed) {
-              unmarkTrainingCompleted(student?.id, training.id);
-            } else {
-              markTrainingCompleted(student?.id, training.id);
-            }
-          }}
-          className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:opacity-90"
-        >
-          <CheckCircle2 className="h-4 w-4" /> {completed ? "Reabrir treinamento" : "Concluir treinamento"}
-        </button>
+        {canCompleteTraining ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (completed) {
+                unmarkTrainingCompleted(student?.id, training.id);
+              } else {
+                markTrainingCompleted(student?.id, training.id);
+              }
+            }}
+            className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:opacity-90"
+          >
+            <CheckCircle2 className="h-4 w-4" /> {completed ? "Reabrir treinamento" : "Concluir treinamento"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center gap-2 rounded-md bg-muted text-muted-foreground px-4 py-2.5 text-sm font-medium opacity-70 cursor-not-allowed"
+            title="Finalize todas as aulas para concluir"
+          >
+            <CheckCircle2 className="h-4 w-4" /> Finalize todas as aulas
+          </button>
+        )}
 
         {next ? (
           <Link to="/trainings/$id/lesson/$lessonId" params={{ id: training.id, lessonId: next.id }} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm hover:bg-accent">
