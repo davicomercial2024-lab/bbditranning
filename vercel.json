@@ -1,5 +1,0 @@
-{
-  "framework": "vite",
-  "buildCommand": "bun run vercel-build",
-  "installCommand": "bun install"
-}
