@@ -1,0 +1,1 @@
+import{c as e}from"./link-ljeve2jA.js";import{s as t}from"./portal-data-Di9Jh4D5.js";import{t as n}from"./admin-training-form-BdeCK1Ad.js";var r=e();function i(){return(0,r.jsx)(t,{title:`Novo treinamento`,subtitle:`Cadastre conteudos organizados em modulos e aulas.`,children:(0,r.jsx)(n,{})})}export{i as component};
