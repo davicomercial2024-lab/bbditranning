@@ -103,21 +103,6 @@ export const deleteDepartmentFn = createServerFn({ method: "POST" })
     return { success: true };
   });
 
-export const markStudentAccessFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ email: z.string() }))
-  .handler(async ({ data }) => {
-    const d = new Date().toISOString();
-    const str = `${d.substring(8,10)}/${d.substring(5,7)}/${d.substring(0,4)} às ${d.substring(11,16)}`;
-    const student = await prisma.student.findUnique({ where: { email: data.email } });
-    if (student) {
-      await prisma.student.update({
-        where: { email: data.email },
-        data: { lastActive: str },
-      });
-    }
-    return { success: true };
-  });
-
 // Create or Update Student
 export const saveStudentFn = createServerFn({ method: "POST" })
   .inputValidator(z.any())
