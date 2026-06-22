@@ -28,11 +28,35 @@ export const getPortalDataFn = createServerFn({ method: "GET" }).handler(async (
 
   // Map progress records into the expected format Record<studentId, string[]>
   const progress: Record<string, string[]> = {};
+  const feedbacks: { studentId: string; trainingId: string; rating: number; feedback: string }[] = [];
   for (const student of students) {
     progress[student.id] = student.progressRecords.map(r => r.trainingId);
+    student.progressRecords.forEach(r => {
+      if (r.rating) {
+        feedbacks.push({
+          studentId: student.id,
+          trainingId: r.trainingId,
+          rating: r.rating,
+          feedback: r.feedback || "",
+        });
+      }
+    });
   }
 
-  return { departments, students, trainings, progress };
+  let adminEvaluations = [];
+  try {
+    if ((prisma as any).adminLessonEvaluation) {
+      adminEvaluations = await (prisma as any).adminLessonEvaluation.findMany({
+        orderBy: { createdAt: "desc" }
+      });
+    } else {
+      adminEvaluations = await prisma.$queryRaw`SELECT * FROM "AdminLessonEvaluation" ORDER BY createdAt DESC`;
+    }
+  } catch (e) {
+    console.log("Could not fetch adminEvaluations:", e);
+  }
+
+  return { departments, students, trainings, progress, feedbacks, adminEvaluations };
 });
 
 // Fetch all students (with their departments)
@@ -169,6 +193,7 @@ export const saveTrainingFn = createServerFn({ method: "POST" })
             modules: training.modules || [],
             totalLessons: training.totalLessons || 0,
             completedLessons: training.completedLessons || 0,
+            minTimeMinutes: training.minTimeMinutes || 0,
           }
         });
       }
@@ -186,6 +211,7 @@ export const saveTrainingFn = createServerFn({ method: "POST" })
         modules: training.modules || [],
         totalLessons: training.totalLessons || 0,
         completedLessons: training.completedLessons || 0,
+        minTimeMinutes: training.minTimeMinutes || 0,
       }
     });
   });
@@ -212,12 +238,12 @@ export const reorderTrainingsFn = createServerFn({ method: "POST" })
   });
 
 export const markTrainingCompletedFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ studentId: z.string(), trainingId: z.string() }))
+  .inputValidator(z.object({ studentId: z.string(), trainingId: z.string(), rating: z.number().optional(), feedback: z.string().optional() }))
   .handler(async ({ data }) => {
     await prisma.studentTrainingProgress.upsert({
       where: { studentId_trainingId: { studentId: data.studentId, trainingId: data.trainingId } },
-      update: {},
-      create: { studentId: data.studentId, trainingId: data.trainingId }
+      update: { rating: data.rating, feedback: data.feedback },
+      create: { studentId: data.studentId, trainingId: data.trainingId, rating: data.rating, feedback: data.feedback }
     });
     return { success: true };
   });
@@ -257,4 +283,36 @@ export const uploadPdfFn = createServerFn({ method: "POST" })
     const filePath = path.join(uploadDir, uniqueName);
     fs.writeFileSync(filePath, buffer);
     return { url: `/uploads/${uniqueName}` };
+  });
+
+export const saveAdminEvaluationFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    studentId: z.string(),
+    trainingId: z.string(),
+    lessonId: z.string(),
+    rating: z.number().min(1).max(5),
+    comments: z.string().optional(),
+  }))
+  .handler(async ({ data }) => {
+    try {
+      if ((prisma as any).adminLessonEvaluation) {
+        await (prisma as any).adminLessonEvaluation.upsert({
+          where: { studentId_trainingId_lessonId: { studentId: data.studentId, trainingId: data.trainingId, lessonId: data.lessonId } },
+          update: { rating: data.rating, comments: data.comments },
+          create: { studentId: data.studentId, trainingId: data.trainingId, lessonId: data.lessonId, rating: data.rating, comments: data.comments },
+        });
+      } else {
+        // Fallback for when Prisma client hasn't hot reloaded
+        const existing: any = await prisma.$queryRaw`SELECT id FROM "AdminLessonEvaluation" WHERE studentId = ${data.studentId} AND trainingId = ${data.trainingId} AND lessonId = ${data.lessonId}`;
+        if (existing && existing.length > 0) {
+          await prisma.$executeRaw`UPDATE "AdminLessonEvaluation" SET rating = ${data.rating}, comments = ${data.comments} WHERE id = ${existing[0].id}`;
+        } else {
+          const id = crypto.randomUUID();
+          await prisma.$executeRaw`INSERT INTO "AdminLessonEvaluation" (id, studentId, trainingId, lessonId, rating, comments, createdAt) VALUES (${id}, ${data.studentId}, ${data.trainingId}, ${data.lessonId}, ${data.rating}, ${data.comments}, CURRENT_TIMESTAMP)`;
+        }
+      }
+    } catch (e) {
+      console.log("Could not save admin evaluation", e);
+    }
+    return { success: true };
   });

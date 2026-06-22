@@ -2,7 +2,9 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { CheckCircle2, ChevronRight, FileText, FileType2, Headphones, PlayCircle, HelpCircle, Link as LinkIcon } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { getStoredSession } from "@/lib/auth";
-import { usePortalData, type LessonType, useLessonProgress } from "@/lib/portal-data";
+import { useState } from "react";
+import { FeedbackModal } from "@/components/feedback-modal";
+import { usePortalData, type LessonType, useLessonProgress, useTrainingTimer } from "@/lib/portal-data";
 
 export const Route = createFileRoute("/trainings/$id")({
   component: TrainingDetail,
@@ -16,9 +18,10 @@ const typeIcon: Record<LessonType, React.ComponentType<{ className?: string }>> 
   quiz: HelpCircle,
   article: FileText,
   link: LinkIcon,
+  practice: FileText,
 };
 
-const typeLabel: Record<LessonType, string> = { video: "Video", pdf: "PDF", audio: "Audio", text: "Texto", quiz: "Quiz", article: "Artigo", link: "Link" };
+const typeLabel: Record<LessonType, string> = { video: "Video", pdf: "PDF", audio: "Audio", text: "Texto", quiz: "Quiz", article: "Artigo", link: "Link", practice: "Pratica Assistida" };
 
 function TrainingDetail() {
   const { id } = Route.useParams();
@@ -40,7 +43,9 @@ function TrainingDetail() {
   const allLessonsCompleted = flat.every(l => isLessonCompleted(l.id));
   const isSingleLessonTraining = flat.length === 1;
   const completed = isTrainingCompletedByStudent(student?.id, training?.id);
-  const canCompleteTraining = isSingleLessonTraining || allLessonsCompleted || completed;
+  const { isTimeMet, remainingMinutes } = useTrainingTimer(training?.id, training?.minTimeMinutes);
+  const canCompleteTraining = (isSingleLessonTraining || allLessonsCompleted || completed) && isTimeMet;
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   if (pathname !== `/trainings/${id}`) {
     return <Outlet />;
@@ -71,7 +76,7 @@ function TrainingDetail() {
               if (completed) {
                 unmarkTrainingCompleted(student?.id, training.id);
               } else {
-                markTrainingCompleted(student?.id, training.id);
+                setIsFeedbackModalOpen(true);
               }
             }}
             className="inline-flex items-center gap-2 rounded-md bg-foreground text-background px-4 py-2.5 text-sm font-medium hover:opacity-90"
@@ -80,15 +85,20 @@ function TrainingDetail() {
             {completed ? "Reabrir treinamento" : "Marcar treinamento como concluido"}
           </button>
         ) : (
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center gap-2 rounded-md bg-muted text-muted-foreground px-4 py-2.5 text-sm font-medium opacity-70 cursor-not-allowed"
-            title="Finalize todas as aulas para concluir"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Finalize todas as aulas
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center gap-2 rounded-md bg-muted text-muted-foreground px-4 py-2.5 text-sm font-medium opacity-70 cursor-not-allowed"
+              title={!isTimeMet ? `Aguarde ${remainingMinutes} min para concluir` : "Finalize todas as aulas para concluir"}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {!isTimeMet ? `Aguarde o tempo minimo` : "Finalize todas as aulas"}
+            </button>
+            {!isTimeMet && training?.minTimeMinutes > 0 && !completed && (
+              <span className="text-xs text-muted-foreground font-medium animate-pulse">Tempo restante: ~{remainingMinutes} min</span>
+            )}
+          </div>
         )}
       </div>
 
@@ -126,6 +136,15 @@ function TrainingDetail() {
           </section>
         ))}
       </div>
+
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        onSubmit={(rating, feedback) => {
+          markTrainingCompleted(student?.id, training.id, rating, feedback);
+          setIsFeedbackModalOpen(false);
+        }}
+      />
     </PortalShell>
   );
 }

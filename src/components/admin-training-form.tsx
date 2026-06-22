@@ -32,7 +32,7 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
     }));
   }
 
-  function updateLesson(moduleIndex: number, lessonIndex: number, field: "title" | "type" | "duration" | "source" | "questions", value: any) {
+  function updateLesson(moduleIndex: number, lessonIndex: number, field: "title" | "type" | "duration" | "source" | "questions" | "quizQuestionsToDisplay", value: any) {
     setDraft((current) => ({
       ...current,
       modules: current.modules.map((module, index) =>
@@ -44,7 +44,7 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                   ? {
                       ...lesson,
                       [field]: field === "type" ? (value as LessonType) : value,
-                      ...(field === "type" && value === "text" && lesson.source === "#" ? { source: "" } : {}),
+                      ...(field === "type" && (value === "text" || value === "practice") && lesson.source === "#" ? { source: "" } : {}),
                     }
                   : lesson,
               ),
@@ -102,7 +102,8 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
               ...lesson,
               title: lesson.title.trim(),
               duration: lesson.duration.trim(),
-              source: lesson.source.trim() || (lesson.type === "text" ? "<p>Conteudo em preparacao.</p>" : "#"),
+              source: lesson.source.trim() || ((lesson.type === "text" || lesson.type === "practice") ? "<p>Conteudo em preparacao.</p>" : "#"),
+              quizQuestionsToDisplay: typeof lesson.quizQuestionsToDisplay === "number" ? lesson.quizQuestionsToDisplay : 3,
             }))
             .filter((lesson) => lesson.title.length > 0),
         }))
@@ -133,7 +134,10 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
         <div className="rounded-xl border border-border bg-card/60 p-6 space-y-4">
           <div className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground/70">INFORMACOES</div>
-          <Field label="Titulo" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
+          <div className="grid sm:grid-cols-[1fr_200px] gap-4">
+            <Field label="Titulo" value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
+            <Field label="Tempo Minimo (minutos)" type="number" min="0" value={draft.minTimeMinutes || 0} onChange={(event) => setDraft({ ...draft, minTimeMinutes: parseInt(event.target.value) || 0 })} />
+          </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Categoria" value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })} />
             <label className="block">
@@ -209,6 +213,7 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                           <option value="audio">Audio</option>
                           <option value="text">Texto</option>
                           <option value="quiz">Quiz</option>
+                          <option value="practice">Pratica</option>
                         </select>
                         <input value={lesson.title} onChange={(event) => updateLesson(moduleIndex, lessonIndex, "title", event.target.value)} placeholder="Titulo da aula" className="bg-transparent text-sm outline-none" />
                         <input value={lesson.duration} onChange={(event) => updateLesson(moduleIndex, lessonIndex, "duration", event.target.value)} placeholder="Duracao" className="bg-transparent text-sm outline-none" />
@@ -216,87 +221,16 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      {lesson.type === "text" ? (
+                      {(lesson.type === "text" || lesson.type === "practice") ? (
                         <div className="mt-3 bg-background rounded-md border border-border overflow-hidden text-foreground [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-border [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[150px]">
                           <ReactQuill
                             theme="snow"
                             value={lesson.source === "#" ? "" : lesson.source}
                             onChange={(content) => updateLesson(moduleIndex, lessonIndex, "source", content)}
-                            placeholder="Escreva aqui o texto que o aluno vai visualizar no portal."
+                            placeholder={lesson.type === "practice" ? "Escreva aqui as instrucoes para esta pratica assistida..." : "Escreva aqui o texto que o aluno vai visualizar no portal."}
                           />
                         </div>
-                      ) : lesson.type === "quiz" ? (
-                        <div className="mt-4 space-y-4 rounded-md border border-border/50 bg-background/20 p-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Perguntas do Quiz</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const q = lesson.questions || [];
-                                updateLesson(moduleIndex, lessonIndex, "questions" as any, [...q, { question: "", options: ["", "", "", ""], correctIndex: 0 }] as any);
-                              }}
-                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:opacity-80"
-                            >
-                              <Plus className="h-3.5 w-3.5" /> Adicionar pergunta
-                            </button>
-                          </div>
-                          {(lesson.questions || []).map((q, qIndex) => (
-                            <div key={qIndex} className="relative rounded border border-border/60 bg-background/50 p-3 pt-5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const qs = [...(lesson.questions || [])];
-                                  qs.splice(qIndex, 1);
-                                  updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
-                                }}
-                                className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                              <input
-                                value={q.question}
-                                onChange={(e) => {
-                                  const qs = [...(lesson.questions || [])];
-                                  qs[qIndex].question = e.target.value;
-                                  updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
-                                }}
-                                placeholder="Digite a pergunta"
-                                className="mb-3 w-full border-b border-border bg-transparent pb-1 text-sm font-medium outline-none placeholder:text-muted-foreground/50 focus:border-primary"
-                              />
-                              <div className="space-y-2 pl-2">
-                                {q.options.map((opt, optIndex) => (
-                                  <div key={optIndex} className="flex items-center gap-2">
-                                    <input
-                                      type="radio"
-                                      name={`quiz-${moduleIndex}-${lessonIndex}-${qIndex}`}
-                                      checked={q.correctIndex === optIndex}
-                                      onChange={() => {
-                                        const qs = [...(lesson.questions || [])];
-                                        qs[qIndex].correctIndex = optIndex;
-                                        updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
-                                      }}
-                                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-primary"
-                                    />
-                                    <input
-                                      value={opt}
-                                      onChange={(e) => {
-                                        const qs = [...(lesson.questions || [])];
-                                        qs[qIndex].options[optIndex] = e.target.value;
-                                        updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
-                                      }}
-                                      placeholder={`Opcao ${optIndex + 1}`}
-                                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                          {(!lesson.questions || lesson.questions.length === 0) && (
-                            <div className="text-center text-xs text-muted-foreground">Nenhuma pergunta adicionada.</div>
-                          )}
-                        </div>
-                      ) : (
+                      ) : lesson.type !== "quiz" && (
                         <div className="mt-3 w-full flex items-center gap-2">
                           <input
                             value={lesson.source}
@@ -338,6 +272,90 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                           )}
                         </div>
                       )}
+
+                      <div className="mt-4 space-y-4 rounded-md border border-border/50 bg-background/20 p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{lesson.type === "quiz" ? "Banco de Perguntas do Quiz" : "Banco de Perguntas (Quiz Opcional)"}</span>
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                              Exibir por vez:
+                              <input 
+                                type="number" 
+                                min="1" 
+                                max={Math.max(1, (lesson.questions || []).length)} 
+                                value={lesson.quizQuestionsToDisplay || 3} 
+                                onChange={(e) => updateLesson(moduleIndex, lessonIndex, "quizQuestionsToDisplay", parseInt(e.target.value) || 1)}
+                                className="w-16 rounded-md border border-border bg-background px-2 py-1 outline-none focus:border-primary"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const q = lesson.questions || [];
+                                updateLesson(moduleIndex, lessonIndex, "questions" as any, [...q, { question: "", options: ["", "", "", ""], correctIndex: 0 }] as any);
+                              }}
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:opacity-80"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> Adicionar Pergunta
+                            </button>
+                          </div>
+                        </div>
+                        {(lesson.questions || []).map((q, qIndex) => (
+                          <div key={qIndex} className="relative rounded border border-border/60 bg-background/50 p-3 pt-5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const qs = [...(lesson.questions || [])];
+                                qs.splice(qIndex, 1);
+                                updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                              }}
+                              className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <input
+                              value={q.question}
+                              onChange={(e) => {
+                                const qs = [...(lesson.questions || [])];
+                                qs[qIndex].question = e.target.value;
+                                updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                              }}
+                              placeholder="Digite a pergunta"
+                              className="mb-3 w-full border-b border-border bg-transparent pb-1 text-sm font-medium outline-none placeholder:text-muted-foreground/50 focus:border-primary"
+                            />
+                            <div className="space-y-2 pl-2">
+                              {q.options.map((opt, optIndex) => (
+                                <div key={optIndex} className="flex items-center gap-2">
+                                  <input
+                                    type="radio"
+                                    name={`quiz-${moduleIndex}-${lessonIndex}-${qIndex}`}
+                                    checked={q.correctIndex === optIndex}
+                                    onChange={() => {
+                                      const qs = [...(lesson.questions || [])];
+                                      qs[qIndex].correctIndex = optIndex;
+                                      updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                                    }}
+                                    className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-primary"
+                                  />
+                                  <input
+                                    value={opt}
+                                    onChange={(e) => {
+                                      const qs = [...(lesson.questions || [])];
+                                      qs[qIndex].options[optIndex] = e.target.value;
+                                      updateLesson(moduleIndex, lessonIndex, "questions" as any, qs as any);
+                                    }}
+                                    placeholder={`Opcao ${optIndex + 1}`}
+                                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        {(!lesson.questions || lesson.questions.length === 0) && (
+                          <div className="text-center text-xs text-muted-foreground">Nenhuma pergunta adicionada.</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                   <button type="button" onClick={() => addLesson(moduleIndex)} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mt-2">

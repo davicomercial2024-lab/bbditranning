@@ -1,4 +1,5 @@
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getStoredSession, type SessionData } from "./auth";
 import { useState, useEffect } from "react";
 import { 
   getPortalDataFn, 
@@ -12,7 +13,8 @@ import {
   unmarkTrainingCompletedFn,
   markStudentAccessFn,
   reorderTrainingsFn,
-  uploadPdfFn
+  uploadPdfFn,
+  saveAdminEvaluationFn
 } from "./api/data.functions";
 
 export type Student = {
@@ -31,7 +33,7 @@ export type Department = {
   name: string;
 };
 
-export type LessonType = "video" | "pdf" | "article" | "link" | "text" | "quiz";
+export type LessonType = "video" | "pdf" | "article" | "link" | "text" | "quiz" | "practice";
 
 export type QuizQuestion = {
   question: string;
@@ -45,8 +47,9 @@ export type Lesson = {
   type: LessonType;
   duration: string;
   source: string;
-  questions?: QuizQuestion[];
   completed?: boolean;
+  questions?: QuizQuestion[];
+  quizQuestionsToDisplay?: number;
 };
 
 export type Module = {
@@ -65,6 +68,7 @@ export type Training = {
   totalLessons: number;
   completedLessons: number;
   order?: number;
+  minTimeMinutes?: number;
   modules: Module[];
 };
 
@@ -103,7 +107,7 @@ export function recalculateTraining(training: Training): Training {
 }
 
 export function emptyLesson(index: number): Lesson {
-  return { id: createId(`aula-${index}`, "lesson"), title: "", type: "video", duration: "", source: "", questions: [] };
+  return { id: createId(`aula-${index}`, "lesson"), title: "", type: "video", duration: "", source: "", questions: [], quizQuestionsToDisplay: 3 };
 }
 
 export function emptyModule(index: number): Module {
@@ -113,6 +117,7 @@ export function emptyModule(index: number): Module {
 export function emptyTraining(): Training {
   return {
     id: "", title: "", category: "", department: "Todos", description: "", cover: coverOptions[0],
+    minTimeMinutes: 0,
     totalLessons: 0, completedLessons: 0, modules: [emptyModule(1)],
   };
 }
@@ -134,7 +139,7 @@ export function usePortalData() {
     queryFn: () => getPortalDataFn(),
   });
 
-  const { departments, students: rawStudents, trainings: rawTrainings, progress } = data;
+  const { departments, students: rawStudents, trainings: rawTrainings, progress, feedbacks, adminEvaluations } = data;
 
   const departmentNames = [...new Set(["Todos", ...departments.map(d => d.name)])].sort((a, b) => {
     if (a === "Todos") return -1;
@@ -186,11 +191,14 @@ export function usePortalData() {
   const mutMarkAccess = useMutation({ mutationFn: (email: string) => markStudentAccessFn({ data: { email } }), onSuccess: invalidate });
   const mutReorderTrainings = useMutation({ mutationFn: (updates: { id: string, order: number }[]) => reorderTrainingsFn({ data: { updates } }), onSuccess: invalidate });
   const mutUploadPdf = useMutation({ mutationFn: (d: { name: string, base64: string }) => uploadPdfFn({ data: d }) });
+  const mutSaveAdminEvaluation = useMutation({ mutationFn: (d: any) => saveAdminEvaluationFn({ data: d }), onSuccess: invalidate });
 
   return {
     trainings,
     students,
     progress,
+    feedbacks,
+    adminEvaluations,
     departments,
     coverOptions,
     departmentNames,
@@ -215,8 +223,9 @@ export function usePortalData() {
     deleteStudent: (id: string) => mutDeleteStudent.mutate(id),
     saveDepartment: (department: Department) => mutSaveDepartment.mutate(department),
     deleteDepartment: (id: string) => mutDeleteDepartment.mutate(id),
-    markTrainingCompleted: (studentId: string | undefined, trainingId: string) => studentId && mutMarkTraining.mutate({ studentId, trainingId }),
+    markTrainingCompleted: (studentId: string | undefined, trainingId: string, rating?: number, feedback?: string) => studentId && mutMarkTraining.mutate({ studentId, trainingId, rating, feedback }),
     unmarkTrainingCompleted: (studentId: string | undefined, trainingId: string) => studentId && mutUnmarkTraining.mutate({ studentId, trainingId }),
+    saveAdminEvaluation: (data: { studentId: string; trainingId: string; lessonId: string; rating: number; comments?: string }) => mutSaveAdminEvaluation.mutate(data),
     markStudentAccess: (email: string) => mutMarkAccess.mutate(email),
     reorderTrainings: (updates: { id: string, order: number }[]) => mutReorderTrainings.mutate(updates),
     uploadPdfAsync: (name: string, base64: string) => mutUploadPdf.mutateAsync({ name, base64 }),
@@ -250,4 +259,45 @@ export function useLessonProgress(studentId?: string | null) {
   const isLessonCompleted = (lessonId: string) => completedLessons.has(lessonId);
 
   return { isLessonCompleted, markLessonCompleted };
+}
+
+export function useTrainingTimer(trainingId: string | undefined, minTimeMinutes?: number) {
+  const session = getStoredSession();
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [isTimeMet, setIsTimeMet] = useState(false);
+
+  useEffect(() => {
+    if (!trainingId || !session?.id || minTimeMinutes === undefined || minTimeMinutes <= 0) {
+      setIsTimeMet(true);
+      return;
+    }
+
+    const key = `timer-${session.id}-${trainingId}`;
+    let startTime = localStorage.getItem(key);
+    if (!startTime) {
+      startTime = Date.now().toString();
+      localStorage.setItem(key, startTime);
+    }
+
+    const start = parseInt(startTime, 10);
+
+    const checkTime = () => {
+      const now = Date.now();
+      const elapsed = (now - start) / 1000 / 60;
+      setElapsedMinutes(Math.floor(elapsed));
+      if (elapsed >= minTimeMinutes) {
+        setIsTimeMet(true);
+      } else {
+        setIsTimeMet(false);
+      }
+    };
+
+    checkTime();
+    const interval = setInterval(checkTime, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [trainingId, session?.id, minTimeMinutes]);
+
+  const remainingMinutes = minTimeMinutes ? Math.max(0, minTimeMinutes - elapsedMinutes) : 0;
+
+  return { isTimeMet, remainingMinutes };
 }

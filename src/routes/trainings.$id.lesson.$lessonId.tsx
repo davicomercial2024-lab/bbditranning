@@ -3,19 +3,37 @@ import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink } from
 import { PortalShell } from "@/components/portal-shell";
 import { getStoredSession } from "@/lib/auth";
 import { useState, useEffect } from "react";
-import { usePortalData, type QuizQuestion, useLessonProgress } from "@/lib/portal-data";
+import { FeedbackModal } from "@/components/feedback-modal";
+import { usePortalData, type QuizQuestion, useLessonProgress, useTrainingTimer } from "@/lib/portal-data";
 
-function QuizPlayer({ questions, onPass }: { questions: QuizQuestion[], onPass: () => void }) {
+function QuizPlayer({ questions, questionsToDisplay = 3, onPass }: { questions: QuizQuestion[], questionsToDisplay?: number, onPass: () => void }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [currentQuestions, setCurrentQuestions] = useState<QuizQuestion[]>([]);
 
-  if (!questions || questions.length === 0) {
+  const startNewAttempt = () => {
+    // Shuffle and pick
+    const shuffled = [...questions].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.max(1, questionsToDisplay));
+    setCurrentQuestions(selected);
+    setAnswers({});
+    setSubmitted(false);
+  };
+
+  useEffect(() => {
+    if (questions.length > 0 && currentQuestions.length === 0) {
+      startNewAttempt();
+    }
+  }, [questions]);
+
+  if (!questions || questions.length === 0 || currentQuestions.length === 0) {
     return <div className="text-center text-muted-foreground">Nenhuma pergunta neste quiz.</div>;
   }
 
-  const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.correctIndex ? 1 : 0), 0);
-  const passed = score === questions.length;
+  const score = currentQuestions.reduce((acc, q, i) => acc + (answers[i] === q.correctIndex ? 1 : 0), 0);
+  const passed = score === currentQuestions.length;
 
+  // Handle pass side-effect cleanly
   useEffect(() => {
     if (submitted && passed) {
       onPass();
@@ -24,7 +42,7 @@ function QuizPlayer({ questions, onPass }: { questions: QuizQuestion[], onPass: 
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      {questions.map((q, qIndex) => (
+      {currentQuestions.map((q, qIndex) => (
         <div key={qIndex} className="space-y-4">
           <h3 className="text-lg font-medium text-foreground">
             {qIndex + 1}. {q.question}
@@ -38,12 +56,12 @@ function QuizPlayer({ questions, onPass }: { questions: QuizQuestion[], onPass: 
               if (!submitted) {
                 btnClass += isSelected ? "border-primary bg-primary/10 text-primary" : "border-border bg-card/50 hover:border-primary/50 text-foreground";
               } else {
-                if (isCorrect) {
+                if (passed && isCorrect) {
                   btnClass += "border-green-500 bg-green-500/10 text-green-500 font-medium";
-                } else if (isSelected && !isCorrect) {
-                  btnClass += "border-red-500 bg-red-500/10 text-red-500";
+                } else if (isSelected) {
+                  btnClass += "border-primary bg-primary/10 text-primary opacity-60";
                 } else {
-                  btnClass += "border-border bg-card/20 text-muted-foreground opacity-50";
+                  btnClass += "border-border bg-card/20 text-muted-foreground opacity-40";
                 }
               }
 
@@ -67,7 +85,7 @@ function QuizPlayer({ questions, onPass }: { questions: QuizQuestion[], onPass: 
         {!submitted ? (
           <button
             type="button"
-            disabled={Object.keys(answers).length < questions.length}
+            disabled={Object.keys(answers).length < currentQuestions.length}
             onClick={() => setSubmitted(true)}
             className="w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
@@ -76,15 +94,12 @@ function QuizPlayer({ questions, onPass }: { questions: QuizQuestion[], onPass: 
         ) : (
           <div className="text-center space-y-4">
             <div className={`text-2xl font-display font-bold ${passed ? "text-green-500" : "text-amber-500"}`}>
-              {passed ? "Parabens! Voce acertou tudo!" : `Voce acertou ${score} de ${questions.length}.`}
+              {passed ? "Parabens! Voce acertou tudo!" : `Voce acertou ${score} de ${currentQuestions.length}.`}
             </div>
             {!passed && (
               <button
                 type="button"
-                onClick={() => {
-                  setAnswers({});
-                  setSubmitted(false);
-                }}
+                onClick={startNewAttempt}
                 className="rounded-md border border-border bg-card px-6 py-2 text-sm font-medium hover:bg-accent"
               >
                 Tentar Novamente
@@ -169,7 +184,10 @@ function LessonPage() {
   const lessonCompleted = isLessonCompleted(lesson.id);
   const isSingleLessonTraining = flat.length === 1;
   const allLessonsCompleted = flat.every(l => isLessonCompleted(l.id));
-  const canCompleteTraining = isSingleLessonTraining || allLessonsCompleted || completed;
+  const { isTimeMet, remainingMinutes } = useTrainingTimer(training.id, training.minTimeMinutes);
+  const canCompleteTraining = (isSingleLessonTraining || allLessonsCompleted || completed) && isTimeMet;
+  const hasQuiz = lesson.questions && lesson.questions.length > 0;
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   return (
     <PortalShell title={lesson.title} subtitle={`${training.title} - ${lesson.duration}`} fullWidth={lesson.type === "pdf"}>
@@ -210,25 +228,45 @@ function LessonPage() {
             <audio controls src={contentSource} className="w-full max-w-md" />
           </div>
         )}
-        {lesson.type === "text" && textLooksLikeHtml && (
-          <article 
-            className="p-8 text-sm leading-relaxed text-foreground break-words overflow-wrap-anywhere [&>p]:mb-4 last:[&>p]:mb-0 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>strong]:font-bold [&>em]:italic" 
-            dangerouslySetInnerHTML={{ __html: contentSource.replace(/\u00A0/g, ' ') }} 
-          />
+        {(lesson.type === "text" || lesson.type === "practice") && textLooksLikeHtml && (
+          <div className="flex flex-col">
+            {lesson.type === "practice" && (
+              <div className="bg-primary/10 border-b border-primary/20 p-4 text-primary text-sm font-medium flex justify-center text-center">
+                Atividade de Pratica Assistida: Realize a atividade sob a supervisao do seu instrutor. O seu desempenho sera avaliado.
+              </div>
+            )}
+            <article 
+              className="p-8 text-sm leading-relaxed text-foreground break-words overflow-wrap-anywhere [&>p]:mb-4 last:[&>p]:mb-0 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>strong]:font-bold [&>em]:italic" 
+              dangerouslySetInnerHTML={{ __html: contentSource.replace(/\u00A0/g, ' ') }} 
+            />
+          </div>
         )}
-        {lesson.type === "text" && !textLooksLikeHtml && (
-          <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap text-foreground break-words overflow-wrap-anywhere">
-            {contentSource.replace(/\u00A0/g, ' ')}
-          </article>
+        {(lesson.type === "text" || lesson.type === "practice") && !textLooksLikeHtml && (
+          <div className="flex flex-col">
+            {lesson.type === "practice" && (
+              <div className="bg-primary/10 border-b border-primary/20 p-4 text-primary text-sm font-medium flex justify-center text-center">
+                Atividade de Pratica Assistida: Realize a atividade sob a supervisao do seu instrutor. O seu desempenho sera avaliado.
+              </div>
+            )}
+            <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap text-foreground break-words overflow-wrap-anywhere">
+              {contentSource.replace(/\u00A0/g, ' ')}
+            </article>
+          </div>
         )}
-        {lesson.type === "quiz" && (
-          <div className="p-8">
-            <QuizPlayer key={lesson.id} questions={lesson.questions || []} onPass={() => markLessonCompleted(lesson.id)} />
+        {lesson.type === "quiz" && !hasQuiz && (
+          <div className="p-8 text-center text-muted-foreground">Este quiz ainda não possui perguntas.</div>
+        )}
+        {hasQuiz && (
+          <div className={lesson.type === "quiz" ? "p-8" : "p-8 border-t border-border/50 bg-card/40"}>
+            {lesson.type !== "quiz" && (
+              <h3 className="text-xl font-display font-semibold mb-6">Quiz de Fixação</h3>
+            )}
+            <QuizPlayer key={lesson.id} questions={lesson.questions || []} questionsToDisplay={lesson.quizQuestionsToDisplay} onPass={() => markLessonCompleted(lesson.id)} />
           </div>
         )}
       </div>
 
-      {lesson.type !== "quiz" && !isSingleLessonTraining && (
+      {!hasQuiz && !isSingleLessonTraining && (
         <div className="mt-6 flex justify-center">
           <button
             type="button"
@@ -256,7 +294,7 @@ function LessonPage() {
               if (completed) {
                 unmarkTrainingCompleted(student?.id, training.id);
               } else {
-                markTrainingCompleted(student?.id, training.id);
+                setIsFeedbackModalOpen(true);
               }
             }}
             className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:opacity-90"
@@ -264,14 +302,20 @@ function LessonPage() {
             <CheckCircle2 className="h-4 w-4" /> {completed ? "Reabrir treinamento" : "Concluir treinamento"}
           </button>
         ) : (
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center gap-2 rounded-md bg-muted text-muted-foreground px-4 py-2.5 text-sm font-medium opacity-70 cursor-not-allowed"
-            title="Finalize todas as aulas para concluir"
-          >
-            <CheckCircle2 className="h-4 w-4" /> Finalize todas as aulas
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center gap-2 rounded-md bg-muted text-muted-foreground px-4 py-2.5 text-sm font-medium opacity-70 cursor-not-allowed"
+              title={!isTimeMet ? `Aguarde ${remainingMinutes} min para concluir` : "Finalize todas as aulas para concluir"}
+            >
+              <CheckCircle2 className="h-4 w-4" /> 
+              {!isTimeMet ? `Aguarde o tempo minimo` : "Finalize todas as aulas"}
+            </button>
+            {!isTimeMet && training?.minTimeMinutes > 0 && !completed && (
+              <span className="text-xs text-muted-foreground font-medium animate-pulse">Tempo restante: ~{remainingMinutes} min</span>
+            )}
+          </div>
         )}
 
         {next ? (
@@ -280,6 +324,15 @@ function LessonPage() {
           </Link>
         ) : <div />}
       </div>
+
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        onSubmit={(rating, feedback) => {
+          markTrainingCompleted(student?.id, training.id, rating, feedback);
+          setIsFeedbackModalOpen(false);
+        }}
+      />
     </PortalShell>
   );
 }

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit2, Plus, Save, Trash2, X } from "lucide-react";
+import { Edit2, Plus, Save, Trash2, X, Star } from "lucide-react";
 import { type FormEvent, type InputHTMLAttributes, useState } from "react";
 import { PortalShell } from "@/components/portal-shell";
 import { type Student, usePortalData } from "@/lib/portal-data";
+import { AdminEvaluationModal } from "@/components/admin-evaluation-modal";
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({ meta: [{ title: "Colaboradores - BBDI" }] }),
@@ -32,6 +33,7 @@ function Field({ label, ...rest }: { label: string } & InputHTMLAttributes<HTMLI
 function AdminUsers() {
   const { students, departmentNames, saveStudent, deleteStudent } = usePortalData();
   const [draft, setDraft] = useState<Student | null>(null);
+  const [evaluationStudent, setEvaluationStudent] = useState<Student | null>(null);
   const [error, setError] = useState("");
 
   function openDraft(student?: Student) {
@@ -127,6 +129,9 @@ function AdminUsers() {
                       <button type="button" onClick={() => openDraft(student)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent">
                         <Edit2 className="h-3.5 w-3.5" /> Editar
                       </button>
+                      <button type="button" onClick={() => setEvaluationStudent(student)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent">
+                        <Star className="h-3.5 w-3.5" /> Avaliar Pratica
+                      </button>
                       <button type="button" onClick={() => handleDeleteStudent(student)} className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">
                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                       </button>
@@ -150,6 +155,9 @@ function AdminUsers() {
                 <div className="flex items-center gap-1">
                   <button type="button" onClick={() => openDraft(student)} className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent" aria-label="Editar colaborador">
                     <Edit2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" onClick={() => setEvaluationStudent(student)} className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent" aria-label="Avaliar Pratica">
+                    <Star className="h-3.5 w-3.5" />
                   </button>
                   <button type="button" onClick={() => handleDeleteStudent(student)} className="h-8 w-8 grid place-items-center rounded-md text-destructive hover:bg-destructive/10" aria-label="Excluir colaborador">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -243,6 +251,12 @@ function AdminUsers() {
           </form>
         )}
       </div>
+
+      <AdminEvaluationModal
+        student={evaluationStudent}
+        isOpen={evaluationStudent !== null}
+        onClose={() => setEvaluationStudent(null)}
+      />
     </PortalShell>
   );
 }

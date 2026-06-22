@@ -31,6 +31,7 @@ model Student {
   userId           String?                 @unique
   user             User?                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   progressRecords  StudentTrainingProgress[]
+  adminEvaluations  AdminLessonEvaluation[]
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 }
@@ -46,8 +47,10 @@ model Training {
   totalLessons     Int                     @default(0)
   completedLessons Int                     @default(0)
   order            Int                     @default(0)
+  minTimeMinutes   Int                     @default(0)
   modules          Json
   progressRecords  StudentTrainingProgress[]
+  adminEvaluations  AdminLessonEvaluation[]
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 }
@@ -68,8 +71,25 @@ model StudentTrainingProgress {
   studentId  String
   trainingId String
   completedAt DateTime  @default(now())
+  rating     Int?
+  feedback   String?
   student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   training   Training  @relation(fields: [trainingId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, trainingId])
+}
+
+model AdminLessonEvaluation {
+  id         String   @id @default(cuid())
+  studentId  String
+  trainingId String
+  lessonId   String
+  rating     Int
+  comments   String?
+  createdAt  DateTime @default(now())
+  
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  training   Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, trainingId, lessonId])
 }
