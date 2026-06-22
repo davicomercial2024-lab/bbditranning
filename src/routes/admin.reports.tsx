@@ -79,15 +79,45 @@ function Reports() {
                 <div key={i} className="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">{training?.title || "Treinamento removido"}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Por: {student?.name || "Aluno removido"}</div>
+                    <div className="text-xs text-muted-foreground">Por: {student?.name || "Aluno removido"}</div>
+
                     {f.feedback && (
-                      <div className="mt-2 text-sm text-foreground/80 italic">"{f.feedback}"</div>
+                      <div className="mt-3">
+                        {(() => {
+                          try {
+                            const parsed = JSON.parse(f.feedback);
+                            if (parsed && parsed.ratings && Array.isArray(parsed.ratings)) {
+                              return (
+                                <div className="space-y-3 bg-accent/30 p-4 rounded-md">
+                                  {parsed.ratings.map((r: any, i: number) => (
+                                    <div key={i} className="flex flex-col gap-1">
+                                      <div className="text-[11px] text-muted-foreground">{r.question}</div>
+                                      <div className="flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                          <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {parsed.comment && (
+                                    <div className="pt-3 mt-2 border-t border-border/50">
+                                      <div className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">Comentário Geral</div>
+                                      <p className="text-sm italic text-foreground">"{parsed.comment}"</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                          } catch(e) {}
+                          
+                          return (
+                            <p className="text-sm italic text-muted-foreground bg-accent/50 p-3 rounded-md">
+                              "{f.feedback}"
+                            </p>
+                          );
+                        })()}
+                      </div>
                     )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <svg key={star} className={`h-4 w-4 ${star <= f.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    ))}
                   </div>
                 </div>
               );

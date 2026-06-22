@@ -140,7 +140,8 @@ function TrainingDetail() {
       <FeedbackModal
         isOpen={isFeedbackModalOpen}
         onClose={() => setIsFeedbackModalOpen(false)}
-        onSubmit={(rating, feedback) => {
+        questions={training.evaluationQuestions}
+        onSubmit={async (rating, feedback) => {
           markTrainingCompleted(student?.id, training.id, rating, feedback);
           setIsFeedbackModalOpen(false);
         }}

@@ -70,6 +70,7 @@ export type Training = {
   order?: number;
   minTimeMinutes?: number;
   modules: Module[];
+  evaluationQuestions?: string[];
 };
 
 export const coverOptions = [
@@ -119,6 +120,7 @@ export function emptyTraining(): Training {
     id: "", title: "", category: "", department: "Todos", description: "", cover: coverOptions[0],
     minTimeMinutes: 0,
     totalLessons: 0, completedLessons: 0, modules: [emptyModule(1)],
+    evaluationQuestions: ["Como você avalia a didática do instrutor?", "O conteúdo foi aplicável à sua rotina?", "Como você avalia o material de apoio?"]
   };
 }
 

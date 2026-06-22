@@ -20,10 +20,14 @@ export const getPortalDataFn = createServerFn({ method: "GET" }).handler(async (
     orderBy: { name: "asc" }
   });
   console.log("-> got students");
-  const trainings = await prisma.training.findMany({
+  const trainingsRaw = await prisma.training.findMany({
     include: { progressRecords: true, department: true },
     orderBy: { order: "asc" }
   });
+  const trainings = trainingsRaw.map(t => ({
+    ...t,
+    evaluationQuestions: t.evaluationQuestions ? JSON.parse(t.evaluationQuestions) : ["Como você avalia a didática do instrutor?", "O conteúdo foi aplicável à sua rotina?", "Como você avalia o material de apoio?"]
+  }));
   console.log("-> got trainings");
 
   // Map progress records into the expected format Record<studentId, string[]>
@@ -32,11 +36,11 @@ export const getPortalDataFn = createServerFn({ method: "GET" }).handler(async (
   for (const student of students) {
     progress[student.id] = student.progressRecords.map(r => r.trainingId);
     student.progressRecords.forEach(r => {
-      if (r.rating) {
+      if (r.rating || r.feedback) {
         feedbacks.push({
           studentId: student.id,
           trainingId: r.trainingId,
-          rating: r.rating,
+          rating: r.rating || 5,
           feedback: r.feedback || "",
         });
       }
@@ -69,10 +73,11 @@ export const getStudentsFn = createServerFn({ method: "GET" }).handler(async () 
 
 // Fetch all trainings
 export const getTrainingsFn = createServerFn({ method: "GET" }).handler(async () => {
-  return await prisma.training.findMany({
+  const t = await prisma.training.findMany({
     include: { department: true, progressRecords: true },
     orderBy: { order: "asc" },
   });
+  return t.map(x => ({ ...x, evaluationQuestions: x.evaluationQuestions ? JSON.parse(x.evaluationQuestions) : undefined }));
 });
 
 // Create or Update Department
@@ -98,14 +103,24 @@ export const deleteDepartmentFn = createServerFn({ method: "POST" })
     return { success: true };
   });
 
+export const markStudentAccessFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ email: z.string() }))
+  .handler(async ({ data }) => {
+    const d = new Date().toISOString();
+    const str = `${d.substring(8,10)}/${d.substring(5,7)}/${d.substring(0,4)} às ${d.substring(11,16)}`;
+    const student = await prisma.student.findUnique({ where: { email: data.email } });
+    if (student) {
+      await prisma.student.update({
+        where: { email: data.email },
+        data: { lastActive: str },
+      });
+    }
+    return { success: true };
+  });
+
 // Create or Update Student
 export const saveStudentFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
-    id: z.string().optional(),
-    name: z.string(),
-    email: z.string().email(),
-    departmentName: z.string(),
-  }))
+  .inputValidator(z.any())
   .handler(async ({ data }) => {
     const { id, name, email, departmentName } = data;
     
