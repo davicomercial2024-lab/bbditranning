@@ -7,7 +7,7 @@ async function main() {
   const client = createClient({ url, authToken });
   
   try {
-    const res = await client.execute('ALTER TABLE "Training" ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0');
+    const res = await client.execute('ALTER TABLE "Training" ADD COLUMN "evaluationQuestions" TEXT');
     console.log('Success:', res);
   } catch (e) {
     if (e.message.includes('duplicate column name')) {

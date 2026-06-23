@@ -48,6 +48,7 @@ model Training {
   completedLessons Int                     @default(0)
   order            Int                     @default(0)
   minTimeMinutes   Int                     @default(0)
+  evaluationQuestions String?
   modules          Json
   progressRecords  StudentTrainingProgress[]
   adminEvaluations  AdminLessonEvaluation[]
