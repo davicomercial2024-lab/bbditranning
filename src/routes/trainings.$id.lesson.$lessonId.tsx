@@ -6,7 +6,19 @@ import { useState, useEffect } from "react";
 import { FeedbackModal } from "@/components/feedback-modal";
 import { usePortalData, type QuizQuestion, useLessonProgress, useTrainingTimer } from "@/lib/portal-data";
 
-function QuizPlayer({ questions, questionsToDisplay = 3, onPass }: { questions: QuizQuestion[], questionsToDisplay?: number, onPass: () => void }) {
+function QuizPlayer({ 
+  questions, 
+  questionsToDisplay = 3, 
+  onPass,
+  isTimeMet = true,
+  remainingMinutes = 0
+}: { 
+  questions: QuizQuestion[]; 
+  questionsToDisplay?: number; 
+  onPass: () => void;
+  isTimeMet?: boolean;
+  remainingMinutes?: number;
+}) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [currentQuestions, setCurrentQuestions] = useState<QuizQuestion[]>([]);
@@ -85,11 +97,12 @@ function QuizPlayer({ questions, questionsToDisplay = 3, onPass }: { questions: 
         {!submitted ? (
           <button
             type="button"
-            disabled={Object.keys(answers).length < currentQuestions.length}
+            disabled={Object.keys(answers).length < currentQuestions.length || (!isTimeMet && remainingMinutes > 0)}
             onClick={() => setSubmitted(true)}
             className="w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            title={!isTimeMet ? `Aguarde o tempo mínimo (~${remainingMinutes} min)` : ""}
           >
-            Finalizar Quiz
+            {!isTimeMet && remainingMinutes > 0 ? `Aguarde o tempo mínimo (~${remainingMinutes} min)` : "Finalizar Quiz"}
           </button>
         ) : (
           <div className="text-center space-y-4">
@@ -261,7 +274,14 @@ function LessonPage() {
             {lesson.type !== "quiz" && (
               <h3 className="text-xl font-display font-semibold mb-6">Quiz de Fixação</h3>
             )}
-            <QuizPlayer key={lesson.id} questions={lesson.questions || []} questionsToDisplay={lesson.quizQuestionsToDisplay} onPass={() => markLessonCompleted(lesson.id)} />
+            <QuizPlayer 
+              key={lesson.id} 
+              questions={lesson.questions || []} 
+              questionsToDisplay={lesson.quizQuestionsToDisplay} 
+              onPass={() => markLessonCompleted(lesson.id)} 
+              isTimeMet={isTimeMet}
+              remainingMinutes={remainingMinutes}
+            />
           </div>
         )}
       </div>
@@ -270,12 +290,17 @@ function LessonPage() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            disabled={lessonCompleted}
+            disabled={lessonCompleted || (!isTimeMet && training?.minTimeMinutes > 0)}
             onClick={() => markLessonCompleted(lesson.id)}
             className="inline-flex items-center gap-2 rounded-md bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={(!isTimeMet && training?.minTimeMinutes > 0) ? `Aguarde o tempo mínimo do treinamento (~${remainingMinutes} min)` : ""}
           >
             <CheckCircle2 className="h-4 w-4" />
-            {lessonCompleted ? "Aula concluída" : "Marcar aula como concluída"}
+            {(!isTimeMet && training?.minTimeMinutes > 0) 
+              ? `Aguarde o tempo mínimo (~${remainingMinutes}m)` 
+              : lessonCompleted 
+                ? "Aula concluída" 
+                : "Marcar aula como concluída"}
           </button>
         </div>
       )}
