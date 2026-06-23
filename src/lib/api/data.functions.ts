@@ -194,6 +194,7 @@ export const saveTrainingFn = createServerFn({ method: "POST" })
             totalLessons: training.totalLessons || 0,
             completedLessons: training.completedLessons || 0,
             minTimeMinutes: training.minTimeMinutes || 0,
+            evaluationQuestions: training.evaluationQuestions ? JSON.stringify(training.evaluationQuestions) : null,
           }
         });
       }
@@ -212,6 +213,7 @@ export const saveTrainingFn = createServerFn({ method: "POST" })
         totalLessons: training.totalLessons || 0,
         completedLessons: training.completedLessons || 0,
         minTimeMinutes: training.minTimeMinutes || 0,
+        evaluationQuestions: training.evaluationQuestions ? JSON.stringify(training.evaluationQuestions) : null,
       }
     });
   });
