@@ -67,7 +67,7 @@ function LoginPage() {
         <div className="mb-6">
           <BrandLogo className="mx-auto h-auto w-full max-h-44 object-contain" />
           <p className="text-gray-400 text-sm mb-6 text-center">
-            Alunos usam o e-mail cadastrado pelo admin. (V2)
+            Acesse o portal de treinamentos do Grupo BBDI.
           </p>
         </div>
 
