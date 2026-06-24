@@ -256,8 +256,8 @@ function LessonPage() {
               </div>
             )}
             <article 
-              className="p-8 text-sm leading-relaxed text-foreground [&_p]:mb-4 last:[&_p]:mb-0 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-4 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_strong]:font-bold [&_em]:italic [&_a]:text-primary [&_a]:underline" 
-              dangerouslySetInnerHTML={{ __html: contentSource }} 
+              className="p-8 text-sm leading-relaxed text-foreground break-words whitespace-pre-wrap [&_p]:mb-5 last:[&_p]:mb-0 [&_p:empty]:h-5 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-4 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_strong]:font-bold [&_em]:italic [&_a]:text-primary [&_a]:underline" 
+              dangerouslySetInnerHTML={{ __html: contentSource.replace(/\u00A0/g, ' ') }} 
             />
           </div>
         )}
@@ -268,8 +268,8 @@ function LessonPage() {
                 Atividade de Pratica Assistida: Realize a atividade sob a supervisao do seu instrutor. O seu desempenho sera avaliado.
               </div>
             )}
-            <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-              {contentSource}
+            <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground">
+              {contentSource.replace(/\u00A0/g, ' ')}
             </article>
           </div>
         )}
