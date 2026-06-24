@@ -85,11 +85,13 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
       return;
     }
 
+    const instructions = window.prompt(
+      "Deseja dar alguma instrução extra para a IA? (Ex: 'Faça perguntas mais difíceis', 'Foque no tópico X').\n\nDeixe em branco para o padrão."
+    ) || "";
+
     setGeneratingAi((prev) => ({ ...prev, [key]: true }));
     try {
-      // If it's a PDF URL, we'd ideally read the text, but for MVP we send the source 
-      // which might be text content or a url. In the backend we can handle it if needed.
-      const newQuestions = await generateQuizQuestionsFn({ data: lesson.source });
+      const newQuestions = await generateQuizQuestionsFn({ data: { lessonContent: lesson.source, instructions: instructions.trim() } });
       
       if (newQuestions && newQuestions.length > 0) {
         const currentQuestions = lesson.questions || [];
@@ -98,9 +100,10 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
       } else {
         alert("A IA não conseguiu gerar perguntas. Verifique a chave de API ou o conteúdo da aula.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Erro ao gerar perguntas com IA.");
+      const msg = error.message ? error.message : "Erro desconhecido.";
+      alert(`Erro ao gerar perguntas com IA.\nDetalhes: ${msg}`);
     } finally {
       setGeneratingAi((prev) => ({ ...prev, [key]: false }));
     }
