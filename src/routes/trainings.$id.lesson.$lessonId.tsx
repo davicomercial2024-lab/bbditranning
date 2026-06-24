@@ -10,12 +10,14 @@ function QuizPlayer({
   questions, 
   questionsToDisplay = 3, 
   onPass,
+  onComplete,
   isTimeMet = true,
   remainingMinutes = 0
 }: { 
   questions: QuizQuestion[]; 
   questionsToDisplay?: number; 
   onPass: () => void;
+  onComplete?: (score: number, total: number, passed: boolean, answers: Record<number, number>) => void;
   isTimeMet?: boolean;
   remainingMinutes?: number;
 }) {
@@ -98,7 +100,12 @@ function QuizPlayer({
           <button
             type="button"
             disabled={Object.keys(answers).length < currentQuestions.length || (!isTimeMet && remainingMinutes > 0)}
-            onClick={() => setSubmitted(true)}
+            onClick={() => {
+              setSubmitted(true);
+              if (onComplete) {
+                onComplete(score, currentQuestions.length, passed, answers);
+              }
+            }}
             className="w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             title={!isTimeMet ? `Aguarde o tempo mínimo (~${remainingMinutes} min)` : ""}
           >
@@ -172,7 +179,7 @@ function getValidVideoUrl(source: string) {
 function LessonPage() {
   const { id, lessonId } = Route.useParams();
   const session = getStoredSession();
-  const { getStudentByEmail, getTraining, getVisibleTrainingsForStudent, isTrainingCompletedByStudent, markTrainingCompleted, unmarkTrainingCompleted } = usePortalData();
+  const { getStudentByEmail, getTraining, getVisibleTrainingsForStudent, isTrainingCompletedByStudent, markTrainingCompleted, unmarkTrainingCompleted, saveQuizResult } = usePortalData();
   const student = getStudentByEmail(session?.email);
   const { isLessonCompleted, markLessonCompleted } = useLessonProgress(student?.id);
   const visibleIds = new Set(getVisibleTrainingsForStudent(session?.email).map((training) => training.id));
@@ -279,6 +286,19 @@ function LessonPage() {
               questions={lesson.questions || []} 
               questionsToDisplay={lesson.quizQuestionsToDisplay} 
               onPass={() => markLessonCompleted(lesson.id)} 
+              onComplete={(score, total, passed, answers) => {
+                if (student) {
+                  saveQuizResult({
+                    studentId: student.id,
+                    trainingId: training.id,
+                    lessonId: lesson.id,
+                    score,
+                    total,
+                    passed,
+                    answers: JSON.stringify(answers),
+                  });
+                }
+              }}
               isTimeMet={isTimeMet}
               remainingMinutes={remainingMinutes}
             />

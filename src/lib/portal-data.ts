@@ -195,12 +195,17 @@ export function usePortalData() {
   const mutUploadPdf = useMutation({ mutationFn: (d: { name: string, base64: string }) => uploadPdfFn({ data: d }) });
   const mutSaveAdminEvaluation = useMutation({ mutationFn: (d: any) => saveAdminEvaluationFn({ data: d }), onSuccess: invalidate });
 
+  const rawQuizResults = data?.studentQuizResults || [];
+
+  const mutSaveQuizResult = useMutation({ mutationFn: (d: any) => import("./api/data.functions").then(m => m.saveQuizResultFn({ data: d })), onSuccess: invalidate });
+
   return {
     trainings,
     students,
     progress,
     feedbacks,
     adminEvaluations,
+    studentQuizResults: rawQuizResults,
     departments,
     coverOptions,
     departmentNames,
@@ -228,6 +233,7 @@ export function usePortalData() {
     markTrainingCompleted: (studentId: string | undefined, trainingId: string, rating?: number, feedback?: string) => studentId && mutMarkTraining.mutate({ studentId, trainingId, rating, feedback }),
     unmarkTrainingCompleted: (studentId: string | undefined, trainingId: string) => studentId && mutUnmarkTraining.mutate({ studentId, trainingId }),
     saveAdminEvaluation: (data: { studentId: string; trainingId: string; lessonId: string; rating: number; comments?: string }) => mutSaveAdminEvaluation.mutate(data),
+    saveQuizResult: (data: { studentId: string; trainingId: string; lessonId: string; score: number; total: number; passed: boolean; answers?: string }) => mutSaveQuizResult.mutate(data),
     markStudentAccess: (email: string) => mutMarkAccess.mutate(email),
     reorderTrainings: (updates: { id: string, order: number }[]) => mutReorderTrainings.mutate(updates),
     uploadPdfAsync: (name: string, base64: string) => mutUploadPdf.mutateAsync({ name, base64 }),

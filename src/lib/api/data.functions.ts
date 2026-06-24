@@ -60,7 +60,28 @@ export const getPortalDataFn = createServerFn({ method: "GET" }).handler(async (
     console.log("Could not fetch adminEvaluations:", e);
   }
 
-  return { departments, students, trainings, progress, feedbacks, adminEvaluations };
+  let studentQuizResults = [];
+  try {
+    if ((prisma as any).studentQuizResult) {
+      studentQuizResults = await (prisma as any).studentQuizResult.findMany({
+        orderBy: { createdAt: "desc" }
+      });
+    } else {
+      studentQuizResults = await prisma.$queryRaw`SELECT * FROM "StudentQuizResult" ORDER BY createdAt DESC`;
+    }
+  } catch (e) {
+    console.log("Could not fetch studentQuizResults:", e);
+  }
+
+  return {
+    departments,
+    students,
+    trainings,
+    progress,
+    feedbacks,
+    adminEvaluations,
+    studentQuizResults
+  };
 });
 
 // Fetch all students (with their departments)
@@ -315,6 +336,41 @@ export const saveAdminEvaluationFn = createServerFn({ method: "POST" })
       }
     } catch (e) {
       console.log("Could not save admin evaluation", e);
+    }
+    return { success: true };
+  });
+
+export const saveQuizResultFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    studentId: z.string(),
+    trainingId: z.string(),
+    lessonId: z.string(),
+    score: z.number(),
+    total: z.number(),
+    passed: z.boolean(),
+    answers: z.string().optional(),
+  }))
+  .handler(async ({ data }) => {
+    try {
+      if ((prisma as any).studentQuizResult) {
+        await (prisma as any).studentQuizResult.create({
+          data: {
+            id: crypto.randomUUID(),
+            studentId: data.studentId,
+            trainingId: data.trainingId,
+            lessonId: data.lessonId,
+            score: data.score,
+            total: data.total,
+            passed: data.passed,
+            answers: data.answers,
+          }
+        });
+      } else {
+        const id = crypto.randomUUID();
+        await prisma.$executeRaw`INSERT INTO "StudentQuizResult" (id, studentId, trainingId, lessonId, score, total, passed, answers, createdAt) VALUES (${id}, ${data.studentId}, ${data.trainingId}, ${data.lessonId}, ${data.score}, ${data.total}, ${data.passed ? 1 : 0}, ${data.answers}, CURRENT_TIMESTAMP)`;
+      }
+    } catch (e) {
+      console.log("Could not save quiz result", e);
     }
     return { success: true };
   });

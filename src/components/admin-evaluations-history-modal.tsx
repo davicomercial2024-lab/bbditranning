@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Star, BookOpen, ClipboardCheck } from "lucide-react";
+import { X, Star, BookOpen, ClipboardCheck, CheckCircle2 } from "lucide-react";
 import { type Student, usePortalData } from "@/lib/portal-data";
 
 export function AdminEvaluationsHistoryModal({
@@ -11,13 +11,14 @@ export function AdminEvaluationsHistoryModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const { adminEvaluations, feedbacks, trainings } = usePortalData();
-  const [activeTab, setActiveTab] = useState<"practice" | "trainings">("practice");
+  const { adminEvaluations, feedbacks, trainings, studentQuizResults } = usePortalData();
+  const [activeTab, setActiveTab] = useState<"practice" | "trainings" | "quizzes">("practice");
 
   if (!isOpen || !student) return null;
 
   const practiceEvals = adminEvaluations.filter(e => e.studentId === student.id);
   const trainingFeedbacks = feedbacks ? feedbacks.filter(f => f.studentId === student.id) : [];
+  const quizzes = studentQuizResults ? studentQuizResults.filter(q => q.studentId === student.id) : [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -32,10 +33,10 @@ export function AdminEvaluationsHistoryModal({
           </button>
         </div>
 
-        <div className="flex gap-4 border-b border-border shrink-0 mb-4">
+        <div className="flex gap-4 border-b border-border shrink-0 mb-4 overflow-x-auto">
           <button
             onClick={() => setActiveTab("practice")}
-            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
               activeTab === "practice"
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -46,7 +47,7 @@ export function AdminEvaluationsHistoryModal({
           </button>
           <button
             onClick={() => setActiveTab("trainings")}
-            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
               activeTab === "trainings"
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -54,6 +55,17 @@ export function AdminEvaluationsHistoryModal({
           >
             <BookOpen className="h-4 w-4" />
             Feedbacks de Treinamentos
+          </button>
+          <button
+            onClick={() => setActiveTab("quizzes")}
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "quizzes"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Resultados de Quizzes
           </button>
         </div>
 
@@ -154,6 +166,45 @@ export function AdminEvaluationsHistoryModal({
                               </p>
                             );
                           })()}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+          {activeTab === "quizzes" && (
+            <>
+              {quizzes.length === 0 ? (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  Nenhum quiz respondido por este colaborador.
+                </div>
+              ) : (
+                quizzes.map((q, i) => {
+                  const training = trainings.find(t => t.id === q.trainingId);
+                  let lessonTitle = "Aula Removida";
+                  if (training) {
+                    const lesson = training.modules.flatMap(m => m.lessons).find(l => l.id === q.lessonId);
+                    if (lesson) lessonTitle = lesson.title;
+                  }
+
+                  return (
+                    <div key={q.id || i} className="rounded-lg border border-border bg-accent/30 p-4">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">
+                            {training?.title || "Treinamento Removido"}
+                          </div>
+                          <div className="text-sm font-medium">{lessonTitle}</div>
+                        </div>
+                        <div className={`flex items-center gap-1 shrink-0 px-2 py-1 rounded border ${q.passed ? 'border-green-500/50 bg-green-500/10 text-green-500' : 'border-amber-500/50 bg-amber-500/10 text-amber-500'}`}>
+                          <span className="text-sm font-bold">{q.score}/{q.total} Acertos</span>
+                        </div>
+                      </div>
+                      {q.createdAt && (
+                        <div className="mt-3 text-[10px] text-muted-foreground text-right">
+                          {new Date(q.createdAt).toLocaleString('pt-BR')}
                         </div>
                       )}
                     </div>
