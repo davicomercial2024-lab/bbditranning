@@ -44,10 +44,10 @@ function AdminTrainings() {
         </Link>
       }
     >
-      <div className="rounded-xl border border-border bg-card/60 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/30">
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-160px)] rounded-xl border border-border bg-card/60 relative">
+        <table className="w-full text-sm relative">
+          <thead className="sticky top-0 z-10">
+            <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-card/95 backdrop-blur-sm border-b border-border/60">
               <th className="px-5 py-3 font-medium">Treinamento</th>
               <th className="px-5 py-3 font-medium">Categoria</th>
               <th className="px-5 py-3 font-medium">Departamento</th>

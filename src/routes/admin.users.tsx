@@ -98,10 +98,10 @@ function AdminUsers() {
       }
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card/60 lg:block">
-          <table className="w-full min-w-[860px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/30">
+        <div className="hidden overflow-x-auto overflow-y-auto max-h-[calc(100vh-160px)] rounded-xl border border-border bg-card/60 lg:block relative">
+          <table className="w-full min-w-[900px] text-sm relative">
+            <thead className="sticky top-0 z-10">
+              <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-card/95 backdrop-blur-sm border-b border-border/60">
                 <th className="px-5 py-3 font-medium">Colaborador</th>
                 <th className="px-5 py-3 font-medium">Departamento</th>
                 <th className="px-5 py-3 font-medium">Ultimo acesso</th>
