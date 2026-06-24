@@ -5,6 +5,7 @@ import { getStoredSession } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { FeedbackModal } from "@/components/feedback-modal";
 import { usePortalData, type QuizQuestion, useLessonProgress, useTrainingTimer } from "@/lib/portal-data";
+import { LessonChatbot } from "@/components/LessonChatbot";
 
 function QuizPlayer({ 
   questions, 
@@ -379,6 +380,10 @@ function LessonPage() {
           setIsFeedbackModalOpen(false);
         }}
       />
+      
+      {lesson.type !== "quiz" && (
+        <LessonChatbot lessonTitle={lesson.title} lessonContent={contentSource} />
+      )}
     </PortalShell>
   );
 }

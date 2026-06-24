@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Plus, Save, Trash2, UploadCloud, Download } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, UploadCloud, Download, Sparkles } from "lucide-react";
 import { type FormEvent, type InputHTMLAttributes, useEffect, useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { emptyLesson, emptyModule, emptyTraining, recalculateTraining, usePortalData, type LessonType, type Training } from "@/lib/portal-data";
+import { generateQuizQuestionsFn } from "@/lib/api/ai.functions";
 
 function Field({ label, ...rest }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -20,6 +21,7 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
   const [draft, setDraft] = useState<Training>(() => recalculateTraining(training ?? emptyTraining()));
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
+  const [generatingAi, setGeneratingAi] = useState<{ [key: string]: boolean }>({});
 
   const handleImportQuiz = (e: React.ChangeEvent<HTMLInputElement>, moduleIndex: number, lessonIndex: number) => {
     const file = e.target.files?.[0];
@@ -72,6 +74,36 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
     };
     reader.readAsText(file);
     e.target.value = "";
+  };
+
+  const handleGenerateAIQuiz = async (moduleIndex: number, lessonIndex: number) => {
+    const key = `${moduleIndex}-${lessonIndex}`;
+    const lesson = draft.modules[moduleIndex].lessons[lessonIndex];
+    
+    if (!lesson.source || lesson.source.length < 50) {
+      alert("A aula precisa ter conteúdo (texto ou pdf) para a IA conseguir gerar perguntas.");
+      return;
+    }
+
+    setGeneratingAi((prev) => ({ ...prev, [key]: true }));
+    try {
+      // If it's a PDF URL, we'd ideally read the text, but for MVP we send the source 
+      // which might be text content or a url. In the backend we can handle it if needed.
+      const newQuestions = await generateQuizQuestionsFn({ data: lesson.source });
+      
+      if (newQuestions && newQuestions.length > 0) {
+        const currentQuestions = lesson.questions || [];
+        updateLesson(moduleIndex, lessonIndex, "questions", [...currentQuestions, ...newQuestions]);
+        alert(`${newQuestions.length} perguntas geradas com sucesso pela IA!`);
+      } else {
+        alert("A IA não conseguiu gerar perguntas. Verifique a chave de API ou o conteúdo da aula.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao gerar perguntas com IA.");
+    } finally {
+      setGeneratingAi((prev) => ({ ...prev, [key]: false }));
+    }
   };
 
   useEffect(() => {
@@ -398,6 +430,16 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                             >
                               <Download className="h-3.5 w-3.5" /> Baixar Modelo
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateAIQuiz(moduleIndex, lessonIndex)}
+                              disabled={generatingAi[`${moduleIndex}-${lessonIndex}`]}
+                              className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-600 disabled:opacity-50"
+                              title="Gerar perguntas automaticamente baseadas na aula"
+                            >
+                              <Sparkles className="h-3.5 w-3.5" /> 
+                              {generatingAi[`${moduleIndex}-${lessonIndex}`] ? "Gerando..." : "Gerar com IA"}
+                            </button>
                             <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" title="Importar arquivo CSV ou JSON">
                               <UploadCloud className="h-3.5 w-3.5" /> Importar Quiz
                               <input 
