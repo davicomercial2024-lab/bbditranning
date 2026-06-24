@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const generateQuizQuestionsFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ data: z.string() }))
-  .handler(async ({ data: { data: lessonContent } }) => {
+  .inputValidator(z.string())
+  .handler(async ({ data: lessonContent }) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -69,8 +69,8 @@ export const generateQuizQuestionsFn = createServerFn({ method: "POST" })
 });
 
 export const askTutorFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ data: z.object({ lessonContent: z.string(), question: z.string() }) }))
-  .handler(async ({ data: { data: { lessonContent, question } } }) => {
+  .inputValidator(z.object({ lessonContent: z.string(), question: z.string() }))
+  .handler(async ({ data: { lessonContent, question } }) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
