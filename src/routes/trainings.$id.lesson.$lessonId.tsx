@@ -38,12 +38,8 @@ function QuizPlayer({
     }
   }, [questions]);
 
-  if (!questions || questions.length === 0 || currentQuestions.length === 0) {
-    return <div className="text-center text-muted-foreground">Nenhuma pergunta neste quiz.</div>;
-  }
-
   const score = currentQuestions.reduce((acc, q, i) => acc + (answers[i] === q.correctIndex ? 1 : 0), 0);
-  const passed = score === currentQuestions.length;
+  const passed = currentQuestions.length > 0 && score === currentQuestions.length;
 
   // Handle pass side-effect cleanly
   useEffect(() => {
@@ -51,6 +47,10 @@ function QuizPlayer({
       onPass();
     }
   }, [submitted, passed, onPass]);
+
+  if (!questions || questions.length === 0 || currentQuestions.length === 0) {
+    return <div className="text-center text-muted-foreground">Nenhuma pergunta neste quiz.</div>;
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
