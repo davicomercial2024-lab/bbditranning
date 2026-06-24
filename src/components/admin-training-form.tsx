@@ -75,8 +75,12 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
   };
 
   useEffect(() => {
-    setDraft(recalculateTraining(training ?? emptyTraining()));
-  }, [training]);
+    if (training && training.id !== draft.id) {
+      setDraft(recalculateTraining(training));
+    } else if (!training && draft.id !== "") {
+      setDraft(recalculateTraining(emptyTraining()));
+    }
+  }, [training?.id]);
 
   function updateModule(moduleIndex: number, title: string) {
     setDraft((current) => ({
