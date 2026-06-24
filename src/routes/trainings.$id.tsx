@@ -62,9 +62,7 @@ function TrainingDetail() {
   return (
     <PortalShell title={training.title} subtitle="Detalhes do Treinamento">
       <div className="mb-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-card p-6 border border-border">
-        <div className="h-32 w-48 shrink-0 overflow-hidden rounded-lg bg-muted">
-          <img src={training.cover} alt={training.title} className="h-full w-full object-cover" />
-        </div>
+        <div className={`h-32 w-48 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br ${training.cover}`} />
         <div className="flex-1 min-w-[220px]">
           <div className="text-xs uppercase tracking-wider text-foreground/70">{training.category} - {training.department ?? "Todos"}</div>
           <div className="mt-2 text-xs text-foreground/70">{training.totalLessons} aulas disponiveis</div>
