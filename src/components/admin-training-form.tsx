@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, UploadCloud } from "lucide-react";
 import { type FormEvent, type InputHTMLAttributes, useEffect, useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
@@ -20,6 +20,59 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
   const [draft, setDraft] = useState<Training>(() => recalculateTraining(training ?? emptyTraining()));
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
+
+  const handleImportQuiz = (e: React.ChangeEvent<HTMLInputElement>, moduleIndex: number, lessonIndex: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      try {
+        let newQuestions: any[] = [];
+        if (file.name.endsWith('.json')) {
+          newQuestions = JSON.parse(text);
+        } else if (file.name.endsWith('.csv')) {
+          const lines = text.split('\n').filter(l => l.trim().length > 0);
+          let start = 0;
+          if (lines[0].toLowerCase().includes('pergunta')) start = 1;
+          
+          for (let i = start; i < lines.length; i++) {
+            // handle both comma and semicolon, ignoring those inside quotes
+            const delimiter = lines[i].includes(';') ? ';' : ',';
+            const regex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
+            const cols = lines[i].split(regex).map(c => c.replace(/^"|"$/g, '').trim());
+            
+            if (cols.length >= 6) {
+               const question = cols[0];
+               const options = [cols[1], cols[2], cols[3], cols[4]];
+               let correctIndex = parseInt(cols[5]) - 1;
+               if (isNaN(correctIndex) || correctIndex < 0 || correctIndex > 3) correctIndex = 0;
+               newQuestions.push({ question, options, correctIndex });
+            }
+          }
+        }
+
+        if (newQuestions.length > 0) {
+          if (newQuestions[0].question && Array.isArray(newQuestions[0].options)) {
+             const currentLesson = draft.modules[moduleIndex].lessons[lessonIndex];
+             const currentQuestions = currentLesson.questions || [];
+             updateLesson(moduleIndex, lessonIndex, "questions", [...currentQuestions, ...newQuestions]);
+             alert(`${newQuestions.length} perguntas importadas com sucesso!`);
+          } else {
+             alert("Formato inválido. O arquivo deve conter 'question', 'options' (array) e 'correctIndex'.");
+          }
+        } else {
+           alert("Nenhuma pergunta encontrada no arquivo.");
+        }
+      } catch (err) {
+        alert("Erro ao ler o arquivo. Verifique se o formato está correto.");
+        console.error(err);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
 
   useEffect(() => {
     setDraft(recalculateTraining(training ?? emptyTraining()));
@@ -331,6 +384,15 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                                 value={lesson.quizQuestionsToDisplay || 3} 
                                 onChange={(e) => updateLesson(moduleIndex, lessonIndex, "quizQuestionsToDisplay", parseInt(e.target.value) || 1)}
                                 className="w-16 rounded-md border border-border bg-background px-2 py-1 outline-none focus:border-primary"
+                              />
+                            </label>
+                            <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                              <UploadCloud className="h-3.5 w-3.5" /> Importar Quiz
+                              <input 
+                                type="file" 
+                                accept=".csv,.json"
+                                className="hidden"
+                                onChange={(e) => handleImportQuiz(e, moduleIndex, lessonIndex)}
                               />
                             </label>
                             <button
