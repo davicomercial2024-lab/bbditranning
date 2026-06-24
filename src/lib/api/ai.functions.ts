@@ -35,7 +35,7 @@ export const generateQuizQuestionsFn = createServerFn({ method: "POST" })
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama3-70b-8192", // Usando o modelo maior para respostas de alta qualidade
+        model: "llama-3.3-70b-versatile", // Usando o modelo maior para respostas de alta qualidade
         messages: [{
           role: "user",
           content: `Você é um gerador de questões para treinamentos corporativos. Leia o conteúdo abaixo e gere 3 a 5 perguntas de múltipla escolha focadas nos pontos mais importantes.
@@ -104,7 +104,7 @@ export const askTutorFn = createServerFn({ method: "POST" })
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192", // Modelo rápido para chat
+        model: "llama-3.1-8b-instant", // Modelo rápido para chat
         messages: [
           {
             role: "system",
@@ -151,7 +151,7 @@ export const askAdminOracleFn = createServerFn({ method: "POST" })
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama3-70b-8192", // Modelo maior para analisar dados
+        model: "llama-3.3-70b-versatile", // Modelo maior para analisar dados
         messages: [
           {
             role: "system",
@@ -164,7 +164,7 @@ export const askAdminOracleFn = createServerFn({ method: "POST" })
             NÃO INVENTE alunos, departamentos ou notas que não estejam no JSON.
             
             DADOS DA PLATAFORMA (Snapshot JSON):
-            ${portalContext.substring(0, 100000)}`
+            ${portalContext.substring(0, 6000)}`
           },
           {
             role: "user",
