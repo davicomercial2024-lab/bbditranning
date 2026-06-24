@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Plus, Save, Trash2, UploadCloud } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, UploadCloud, Download } from "lucide-react";
 import { type FormEvent, type InputHTMLAttributes, useEffect, useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
@@ -386,7 +386,15 @@ export function AdminTrainingForm({ training }: { training?: Training }) {
                                 className="w-16 rounded-md border border-border bg-background px-2 py-1 outline-none focus:border-primary"
                               />
                             </label>
-                            <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                            <a 
+                              href="/modelo_quiz.csv" 
+                              download="modelo_quiz.csv"
+                              className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                              title="Baixar modelo Excel (CSV)"
+                            >
+                              <Download className="h-3.5 w-3.5" /> Baixar Modelo
+                            </a>
+                            <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" title="Importar arquivo CSV ou JSON">
                               <UploadCloud className="h-3.5 w-3.5" /> Importar Quiz
                               <input 
                                 type="file" 
