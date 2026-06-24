@@ -1,6 +1,6 @@
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 
-export const generateQuizQuestionsFn = createServerFn("POST", async (lessonContent: string) => {
+export const generateQuizQuestionsFn = createServerFn({ method: "POST" }).validator((data: { data: string }) => data).handler(async ({ data: lessonContent }) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -65,7 +65,7 @@ export const generateQuizQuestionsFn = createServerFn("POST", async (lessonConte
   }
 });
 
-export const askTutorFn = createServerFn("POST", async ({ lessonContent, question }: { lessonContent: string; question: string }) => {
+export const askTutorFn = createServerFn({ method: "POST" }).validator((data: { data: { lessonContent: string; question: string } }) => data).handler(async ({ data: { lessonContent, question } }) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
