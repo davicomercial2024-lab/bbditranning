@@ -256,8 +256,8 @@ function LessonPage() {
               </div>
             )}
             <article 
-              className="p-8 text-sm leading-relaxed text-foreground break-words overflow-wrap-anywhere [&>p]:mb-4 last:[&>p]:mb-0 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>strong]:font-bold [&>em]:italic" 
-              dangerouslySetInnerHTML={{ __html: contentSource.replace(/\u00A0/g, ' ') }} 
+              className="p-8 text-sm leading-relaxed text-foreground [&_p]:mb-4 last:[&_p]:mb-0 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-4 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_strong]:font-bold [&_em]:italic [&_a]:text-primary [&_a]:underline" 
+              dangerouslySetInnerHTML={{ __html: contentSource }} 
             />
           </div>
         )}
@@ -268,8 +268,8 @@ function LessonPage() {
                 Atividade de Pratica Assistida: Realize a atividade sob a supervisao do seu instrutor. O seu desempenho sera avaliado.
               </div>
             )}
-            <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap text-foreground break-words overflow-wrap-anywhere">
-              {contentSource.replace(/\u00A0/g, ' ')}
+            <article className="p-8 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+              {contentSource}
             </article>
           </div>
         )}
